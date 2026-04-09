@@ -34,7 +34,7 @@ export default function Navbar() {
           </div>
           <div>
             <span className="gradient-text" style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>
-              ScamShield
+              SoloFraud
             </span>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#9aabb8", marginLeft: 6, letterSpacing: "0.12em", textTransform: "uppercase" }}>
               MY

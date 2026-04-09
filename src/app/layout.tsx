@@ -3,7 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "ScamShield MY — AI-Powered Scam Protection for Malaysians",
+  title: "SoloFraud — AI-Powered Scam Protection for Malaysians",
   description:
     "Real-time AI protection against digital fraud, phishing, scam messages, and financial crimes. Powered by Google Gemini, Vertex AI, and community intelligence.",
   keywords: [

@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+  <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f6e1_fe0f/512.webp" alt="SoloFraud Logo" width="120" />
+  <h1>SoloFraud</h1>
+  <p><strong>Your Sovereign AI Shield Against Digital Threats in Malaysia</strong></p>
+  <p><i>Project 2030: MyAI Future Hackathon | Track 5: Secure Digital (FinTech & Security)</i></p>
 
-## Getting Started
+  [![Next.js](https://img.shields.io/badge/Next.js-15+-black?logo=next.js)](https://nextjs.org/)
+  [![Gemini](https://img.shields.io/badge/Gemini_2.0-Flash-blue?logo=google)](https://ai.google.dev/)
+  [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-First, run the development server:
+</div>
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+## 📖 Executive Summary
+
+SoloFraud is a comprehensive, agentic AI-powered cybersecurity platform designed to protect Malaysians from the rapidly evolving landscape of digital fraud. Aligning directly with the **Malaysia Madani framework** and the **New Industrial Master Plan (NIMP) 2030**, we are transitioning Malaysia from a passive technology consumer to an active, sovereign technology creator.
+
+With digital scams costing Malaysians over RM1.2 Billion annually, SoloFraud serves as a critical sovereign digital infrastructure, utilizing **Google Gemini 2.0 Flash** to provide real-time, low-latency protection layers including automated phishing URL detection, SMS/WhatsApp analysis, and autonomous legal advisory.
+
+
+## 🎯 Problem Statement & Impact
+In 2023 alone, over 39,000 scam cases were reported in Malaysia via CCID, resulting in massive financial hemorrhage. Existing solutions rely on static blacklists or delayed community reporting.
+
+**Our Solution:** SoloFraud introduces an active-defense mechanism utilizing **Agentic AI Workflows**. It doesn't just passively read messages; it autonomously searches databases, reasons over threat intelligence, and executes real-world actions (such as drafting PDRM/NSRC police reports) to protect the user instantly.
+
+## 🧠 Core Architecture (Agentic AI)
+
+SoloFraud has completely transitioned from a static "Chat" interface to an **Autonomous Execution (Action)** model, strictly adhering to the technical mandate of the hackathon.
+
+### The Stack
+- **The Brain**: `Google Gemini 2.0 Flash` (Optimized for low-latency, rapid threat analysis).
+- **The Orchestrator**: Agentic Function Calling / Tool Execution managed via Next.js serverless functions.
+- **The Context**: Simulated Retrieval-Augmented Generation (RAG) using historical threat indicators and the national SemakMule database structure.
+
+### Agentic Workflow Diagram
+```mermaid
+graph TD
+    A[Suspicious Input (SMS/Call)] --> B[Agentic AI Router]
+    B -->|Need Context| C{Function Calling Triggered}
+    C -->|Lookup Required| D[(Mock SemakMule Database)]
+    C -->|Action Required| E[Draft Official Police Report]
+    D --> F[LLM Synthesis]
+    E --> F
+    F --> G[Actionable Dashboard & Output]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Key Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Scam Analyzer:** A diagnostic pipeline that processes raw SMS/WhatsApp messages. It autonomously queries threat intelligence contexts before outputting a highly structured Risk Matrix (Verdict, Confidence, Findings).
+2. **AI Advisor (Agentic Chat):** A sophisticated conversational agent that has access to local tools. If it detects a compromised bank account, it will autonomously invoke the `draftPoliceReport` action tool to generate NSRC-compliant documents.
+3. **URL Sentinel:** Real-time domain verification assessing SSL, WHOIS, brand impersonation footprints, and Malaysian specific TLDs (.my).
+4. **Threat Dashboard:** Real-time statistical dashboard mapping scam taxonomies, financial losses, and active threat clusters across Malaysian states.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Local Setup Instructions
 
-## Learn More
+```bash
+# 1. Clone the repository
+git clone https://github.com/Anonys-sky/SoloFraud.git
+cd SoloFraud
 
-To learn more about Next.js, take a look at the following resources:
+# 2. Install dependencies
+npm install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 3. Setup Environment Variables
+# Create a .env.local file in the root directory and add:
+GEMINI_API_KEY="your_google_gemini_api_key"
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# 4. Run the development server
+npm run dev
 
-## Deploy on Vercel
+# 5. Open http://localhost:3000 in your browser
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ⚖️ Declarations & Ethical Compliance
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### AI Tool Disclosure
+In accordance with the hackathon's zero-tolerance policy, the team officially declares the use of AI-assisted coding tools for the development of this project.
+- **Code Generation:** GitHub Copilot and Google Gemini were used to accelerate boilerplate generation, CSS styling, and Next.js component structuring.
+- **Core Logic:** We guarantee full comprehension of our codebase and are fully prepared to defend the Agentic orchestration, API routing, and component state management during evaluating rounds.
+
+### Ethical/Responsible Use of AI
+SoloFraud strictly adheres to Google's AI Principles. 
+- **Privacy:** Message analysis occurs statistically; no Personally Identifiable Information (PII) is stored or retained. 
+- **Bias:** The RAG prompt context is grounded purely in financial/technical realities (URLs, numbers), avoiding demographic profiling.
+
+---
+*Built with ❤️ for Malaysia. "Bridging the gap between theory and execution."*

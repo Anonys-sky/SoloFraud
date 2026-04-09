@@ -57,72 +57,7 @@ const exampleScams = [
 ];
 
 /* ────────────────── analysis function ──────────────── */
-function analyzeMessage(text: string): AnalysisResult {
-  const lower = text.toLowerCase();
-  const findings: Finding[] = [];
-  let riskScore = 0;
 
-  if (/24 jam|hours?|immediately|segera|tamat|urgent/i.test(text)) {
-    findings.push({ icon: "⏰", label: "Urgency Pressure", detail: "Creates artificial time pressure to prevent rational thinking", severity: "high" });
-    riskScore += 25;
-  }
-  const banks = ["maybank", "cimb", "rhb", "public bank", "bank negara", "bsn", "ambank", "hong leong"];
-  const impersonated = banks.find(b => lower.includes(b));
-  if (impersonated) {
-    findings.push({ icon: "🏦", label: "Bank Impersonation", detail: `References "${impersonated.toUpperCase()}" — but uses unofficial channel`, severity: "high" });
-    riskScore += 30;
-  }
-  if (/bit\.ly|tinyurl|\.cc\/|\.tk\/|\.ml\/|goo\.gl/i.test(text)) {
-    findings.push({ icon: "🔗", label: "Suspicious URL", detail: "Uses URL shortener or non-official domain to hide real destination", severity: "high" });
-    riskScore += 25;
-  }
-  if (/rm\s?\d|memenangi|winner|hadiah|roi|guarantee|jaminan/i.test(text)) {
-    findings.push({ icon: "💰", label: "Financial Lure", detail: "Promises unrealistic monetary reward to entice action", severity: "high" });
-    riskScore += 20;
-  }
-  if (/tac|otp|pin|password|kata laluan|6.digit|reply with/i.test(text)) {
-    findings.push({ icon: "🔐", label: "Credential Theft Attempt", detail: "Requests sensitive authentication codes — banks NEVER do this via SMS", severity: "high" });
-    riskScore += 35;
-  }
-  if (/whatsapp|wa\.me|\+60\s?1[0-9]/i.test(text)) {
-    findings.push({ icon: "📱", label: "Suspicious Contact Channel", detail: "Directs to personal WhatsApp — legitimate services use official channels", severity: "medium" });
-    riskScore += 15;
-  }
-  if (/trading|bot|invest|300%|roi|monthly return/i.test(text)) {
-    findings.push({ icon: "📈", label: "Investment Scam Pattern", detail: "Promises guaranteed high returns — classic Ponzi/MLM indicator", severity: "high" });
-    riskScore += 25;
-  }
-  if (findings.length === 0) {
-    findings.push({ icon: "🔍", label: "No Obvious Red Flags", detail: "Message appears relatively normal, but always verify independently", severity: "low" });
-  }
-
-  riskScore = Math.min(riskScore, 99);
-  const confidence = Math.min(50 + riskScore * 0.5, 99.2);
-  let verdict: AnalysisResult["verdict"] = "LOW_RISK";
-  let scamType = "Unknown";
-  let summary = "This message appears to be relatively safe.";
-  const advice: string[] = [];
-
-  if (riskScore >= 60) {
-    verdict = "HIGH_RISK";
-    summary = "This message exhibits multiple characteristics of a known scam pattern.";
-    advice.push("Do NOT click any links or share personal information", "Do NOT transfer any money", "Report to CCID Hotline: 03-2610 1559", "Report to NSRC: 997", "Block and delete the message");
-  } else if (riskScore >= 30) {
-    verdict = "MEDIUM_RISK";
-    summary = "This message contains suspicious elements that warrant caution.";
-    advice.push("Verify independently by calling the official organization", "Do not click links — type the URL manually instead", "If unsure, ask a trusted friend or family member");
-  } else {
-    advice.push("Message appears normal, but always stay vigilant", "Never share OTP/TAC codes with anyone");
-  }
-
-  if (/memenangi|winner|hadiah/i.test(text)) scamType = "Macau Scam / Lucky Draw Scam";
-  else if (/parcel|customs|delivery|pos/i.test(text)) scamType = "Parcel Delivery Scam";
-  else if (/tac|otp|pin/i.test(text)) scamType = "TAC/OTP Phishing";
-  else if (/invest|trading|roi/i.test(text)) scamType = "Investment / Ponzi Scam";
-  else if (/love|sayang|dear/i.test(text)) scamType = "Love Scam";
-
-  return { verdict, confidence, summary, findings, advice, scamType };
-}
 
 /* ────────────────────── page ──────────────────── */
 export default function Home() {
@@ -135,9 +70,32 @@ export default function Home() {
     if (!text.trim()) return;
     setAnalyzing(true);
     setResult(null);
-    await new Promise((r) => setTimeout(r, 1800));
-    setResult(analyzeMessage(text));
-    setAnalyzing(false);
+    
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      
+      setResult(data);
+    } catch (err) {
+      console.error(err);
+      // Fallback result if API fails
+      setResult({
+        verdict: "MEDIUM_RISK",
+        confidence: 0,
+        summary: "Analysis failed. Please try again.",
+        findings: [],
+        advice: ["Service temporarily unavailable"],
+        scamType: "Unknown"
+      });
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const loadExample = (example: string) => {
@@ -374,7 +332,7 @@ export default function Home() {
                   className="btn-secondary"
                   style={{ width: "100%", marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                   onClick={() => {
-                    const report = `ScamShield MY Report\nVerdict: ${result.verdict}\nConfidence: ${result.confidence.toFixed(1)}%\nType: ${result.scamType}\n\nFindings:\n${result.findings.map(f => `• ${f.label}: ${f.detail}`).join("\n")}\n\nAdvice:\n${result.advice.map(a => `• ${a}`).join("\n")}`;
+                    const report = `SoloFraud Report\nVerdict: ${result.verdict}\nConfidence: ${result.confidence.toFixed(1)}%\nType: ${result.scamType}\n\nFindings:\n${result.findings.map(f => `• ${f.label}: ${f.detail}`).join("\n")}\n\nAdvice:\n${result.advice.map(a => `• ${a}`).join("\n")}`;
                     navigator.clipboard.writeText(report);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
