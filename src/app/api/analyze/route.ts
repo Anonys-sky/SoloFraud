@@ -52,8 +52,10 @@ export async function POST(req: NextRequest) {
     // Diagnostic Logging: Critical for identifying live deployment failures.
     console.error("[Analyzer API Error Full Detail]:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
     
+    const isAiFailure = error.message?.includes("AI Engine Failure");
+    
     return NextResponse.json({ 
-      error: "Analysis failed", 
+      error: isAiFailure ? error.message : "Analysis failed", 
       detail: error.message 
     }, { status: 500 });
   }

@@ -82,6 +82,8 @@ export const analyzeMessageFlow = ai.defineFlow(
       "googleai/gemini-2.5-pro"
     ];
 
+    let lastErrorMessage = "Service temporarily unavailable.";
+
     for (const model of analysisModels) {
       try {
         console.log(`[Flow] Attempting analysis with ${model}...`);
@@ -96,11 +98,13 @@ export const analyzeMessageFlow = ai.defineFlow(
         
         if (response.output) return response.output;
       } catch (error: any) {
-        console.warn(`[Flow] ${model} hit a limit or error:`, error.message);
+        lastErrorMessage = error.message;
+        console.warn(`[Flow] ${model} hit a limit or error:`, lastErrorMessage);
         continue; // Fallback to next model
       }
     }
 
-    throw new Error("Our analysis models are currently undergoing routine 2026 maintenance. Please try again in 30 seconds.");
+    // Pass the specific error back up so the user/admin can diagnose it.
+    throw new Error(`AI Engine Failure: ${lastErrorMessage}`);
   }
 );
