@@ -26,9 +26,8 @@ const scamAnalysisSchema = z.object({
  */
 export async function runAgenticChat(chatHistory: any[]) {
   const models = [
-    "googleai/gemini-2.5-flash",
-    "googleai/gemini-2.5-flash-lite",
-    "googleai/gemini-2.5-pro"
+    "vertexai/gemini-1.5-flash",
+    "vertexai/gemini-1.5-pro"
   ];
 
   for (const model of models) {
@@ -123,9 +122,8 @@ export const analyzeMessageFlow = ai.defineFlow(
   async (input) => {
     // We prioritize Flash models for high availability during hackathons
     const analysisModels = [
-      "googleai/gemini-2.5-flash",
-      "googleai/gemini-2.5-flash-lite",
-      "googleai/gemini-2.0-flash" // Added more stable 2.0 fallback
+      "vertexai/gemini-1.5-flash",
+      "vertexai/gemini-1.5-pro"
     ];
 
     let lastErrorMessage = "";
