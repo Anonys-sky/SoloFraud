@@ -69,7 +69,13 @@ GEMINI_API_KEY="your_google_gemini_api_key"
 npm run dev
 
 # 5. Open http://localhost:3000 in your browser
-```
+## 🔮 SoloFraud 2030: The National Security Roadmap
+
+SoloFraud is designed as an evolving sovereign ecosystem. Our R&D pipeline includes:
+
+1. **AI Voice Defense (Active Call Screening):** Real-time transcription of incoming calls via Google Cloud Speech-to-Text, triggering an instant AI risk-overlay to prevent tele-scams.
+2. **Email Fraud Sentinel:** Automated background scanning of indigenous enterprise emails using Cloud Eventarc, identifying impersonation attempts and phishing domains before they reach the inbox.
+3. **PDRM Integration:** Direct API linkage to the NSRC (997) portal for sub-second report validation and financial fund-freezing procedures.
 
 ## ⚖️ Declarations & Ethical Compliance (Section 4 Mandatory)
 
