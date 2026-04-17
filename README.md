@@ -51,24 +51,6 @@ graph TD
 2. **AI Advisor (Agentic Chat):** An autonomous consultant that can invoke the `draftPoliceReport` tool to generate NSRC-compliant documents instantly.
 3. **Quota Armor:** A proactive resilience engine that triggers a local regex-based heuristic analyzer if API quotas are exhausted, ensuring no "500" or "429" errors during the live pitch.
 
-## 🚀 Local Setup Instructions
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/Anonys-sky/SoloFraud.git
-cd SoloFraud
-
-# 2. Install dependencies
-npm install
-
-# 3. Setup Environment Variables
-# Create a .env.local file in the root directory and add:
-GEMINI_API_KEY="your_google_gemini_api_key"
-
-# 4. Run the development server
-npm run dev
-
-# 5. Open http://localhost:3000 in your browser
 ## 🔮 SoloFraud 2030: The National Security Roadmap
 
 SoloFraud is designed as an evolving sovereign ecosystem. Our roadmap for the nation includes:
@@ -84,8 +66,9 @@ In accordance with Section 4 of the Code of Conduct, the team declares the use o
 
 ### Ethical/Responsible Use of AI
 SoloFraud strictly adheres to Google's AI Principles. 
-- **Privacy:** Message analysis occurs statistically; no Personally Identifiable Information (PII) is stored or retained. 
-- **Bias:** The RAG prompt context is grounded purely in financial/technical realities (URLs, numbers), avoiding demographic profiling.
+- **Privacy Enforcement**: Message analysis is statistical; no PII is retained. 
+- **Safety First**: Grounded in Malaysian threat context to avoid hallucinations.
+- **Transparency**: Clear risk verdicts with confidence scoring.
 
 ---
-*Built with ❤️ for Malaysia. "Bridging the gap between theory and execution."*
+*Built with ❤️ for Malaysia. "Advancing The Nation, Building Solutions With Google AI."*
