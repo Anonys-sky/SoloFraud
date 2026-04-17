@@ -49,7 +49,7 @@ export async function runAgenticChat(chatHistory: any[]) {
         retriever: vertexAISearchRetriever,
         config: { 
           temperature: 0.1,
-          MAX_TOKENS: 1000, // Efficiency limit
+          maxOutputTokens: 1000, // Efficiency limit
         },
       });
 
@@ -93,7 +93,7 @@ export const analyzeMessageFlow = ai.defineFlow(
           output: { schema: scamAnalysisSchema },
           tools: [querySemakmuleDB],
           retriever: vertexAISearchRetriever,
-          config: { MAX_TOKENS: 2000 },
+          config: { maxOutputTokens: 2000 },
         });
         
         if (response.output) return response.output;
