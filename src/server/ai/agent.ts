@@ -69,12 +69,6 @@ export async function runAgenticChat(chatHistory: any[]) {
  * This flow is used by the Scam Analyzer dashboard to provide structured risk metrics.
  * Now equipped with 2026-standard Triple-Layer Resilience to solve API limit issues.
  */
-export const analyzeMessageFlow = ai.defineFlow(
-  {
-    name: "analyzeMessageFlow",
-    inputSchema: z.object({ message: z.string() }),
-    outputSchema: scamAnalysisSchema,
-  },
 /**
  * Heuristic Fail-Safe:
  * If all AI models are rate-limited during the hackathon, this provides a 
