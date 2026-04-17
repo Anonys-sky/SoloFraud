@@ -78,20 +78,35 @@ export default function Home() {
         body: JSON.stringify({ message: text })
       });
       
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) {
+        // Safe check for non-JSON error pages (like 504 Gateway Timeout)
+        const errorText = await response.text();
+        let errorMsg = "Service temporarily unavailable. Please try again.";
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMsg = errorJson.error || errorJson.detail || errorMsg;
+        } catch (e) {
+          console.warn("Server returned non-JSON error:", errorText);
+        }
+        throw new Error(errorMsg);
+      }
       
+      const data = await response.json();
       setResult(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      // Fallback result if API fails
+      // Resilience Fallback: Ensure UI doesn't crash during heavy server load
       setResult({
         verdict: "MEDIUM_RISK",
         confidence: 0,
-        summary: "Analysis failed. Please try again.",
+        summary: err.message || "The AI is currently under high demand. Please wait a moment and try again.",
         findings: [],
-        advice: ["Service temporarily unavailable"],
-        scamType: "Unknown"
+        advice: [
+          "Wait 30-60 seconds and try again.",
+          "If the problem persists, check your internet connection.",
+          "Contact the NSRC at 997 if this is an urgent scam emergency."
+        ],
+        scamType: "Connection Timeout"
       });
     } finally {
       setAnalyzing(false);

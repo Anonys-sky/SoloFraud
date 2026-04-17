@@ -3,6 +3,9 @@ import { analyzeMessageFlow } from "@/server/ai/agent";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
+// Incremental timeout to accommodate multi-model fallback chain
+export const maxDuration = 110;
+
 const MALAYSIAN_CITIES = [
   "Kuala Lumpur", "Petaling Jaya", "Shah Alam", "Johor Bahru", 
   "George Town", "Ipoh", "Kuching", "Kota Kinabalu", "Melaka", "Seremban"

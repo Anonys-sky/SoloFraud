@@ -47,7 +47,10 @@ export async function runAgenticChat(chatHistory: any[]) {
           "Communicate in a professional, protective, and Malaysian-context-aware manner.",
         tools: [querySemakmuleDB, draftPoliceReport],
         retriever: vertexAISearchRetriever,
-        config: { temperature: 0.1 },
+        config: { 
+          temperature: 0.1,
+          MAX_TOKENS: 1000, // Efficiency limit
+        },
       });
 
       return response.text;
@@ -88,6 +91,7 @@ export const analyzeMessageFlow = ai.defineFlow(
           output: { schema: scamAnalysisSchema },
           tools: [querySemakmuleDB],
           retriever: vertexAISearchRetriever,
+          config: { MAX_TOKENS: 2000 },
         });
         
         if (response.output) return response.output;
