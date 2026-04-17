@@ -56,7 +56,7 @@ export const draftPoliceReport = ai.defineTool(
     description: "Drafts a formal, structured police report based on the details of the scam incident provided by the user. Used when a user wants to report a scam.",
     inputSchema: z.object({
       incidentDetails: z.string().describe("Full summary of how the scam occurred, including what the scammer claimed."),
-      scammerContact: z.string().describe("The phone number or username of the scammer."),
+      scammerContact: z.string().optional().describe("The phone number or username of the scammer if known, otherwise leave blank or use 'Unknown'."),
       financialLoss: z.string().optional().describe("The estimated amount lost (RM) if applicable."),
     }),
     outputSchema: z.object({
