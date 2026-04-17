@@ -44,3 +44,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ide
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# os
+.DS_Store
+Thumbs.db
+
+# genkit / firebase
+.genkit/
+.firebase/
+firebase-debug.log*
+.firebaserc
