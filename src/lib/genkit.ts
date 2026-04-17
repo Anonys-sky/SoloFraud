@@ -10,6 +10,7 @@ export const ai = genkit({
   plugins: [
     vertexAI({ 
       location: "asia-southeast1", // Match Cloud Run region
+      projectId: "solofraud-my-2030", // Explicit Project ID
     }),
   ],
   model: "vertexai/gemini-1.5-flash",
