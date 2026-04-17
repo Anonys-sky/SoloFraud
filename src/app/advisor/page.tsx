@@ -8,10 +8,12 @@ import {
   Shield,
   Bot,
   User,
-  Sparkles,
-  AlertTriangle,
   Phone,
   FileText,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 interface Message {
@@ -51,8 +53,61 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
   ]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeakingEnabled, setIsSpeakingEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    if (typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "speechRecognition" in window)) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).speechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = "ms-MY"; // Default to Malay context, but handles English well
+
+      recognitionRef.current.onresult = (event: any) => {
+        let interimTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            setInput((prev) => prev + event.results[i][0].transcript);
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech Recognition Error:", event.error);
+        setIsListening(false);
+      };
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      setInput("");
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
+
+  const speak = (text: string) => {
+    if (!isSpeakingEnabled || typeof window === "undefined") return;
+    window.speechSynthesis.cancel(); // Stop current speech
+    const utterance = new SpeechSynthesisUtterance(text.replace(/[#*]/g, "")); // Clean markdown
+    utterance.lang = "en-US"; // Default voice
+    window.speechSynthesis.speak(utterance);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -103,6 +158,9 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
 
       // Add it to the screen!
       setMessages((prev) => [...prev, aiMsg]);
+
+      // Read aloud if enabled
+      speak(aiMsg.content);
     } catch (error) {
       console.error(error);
       const errorMsg: Message = {
@@ -234,20 +292,33 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
         </motion.div>
       )}
 
-      {/* Input Bar */}
       <div className="glass-card-static p-3">
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={toggleListening}
+            className={`p-3 rounded-xl transition-all ${isListening ? "bg-red-50 text-red-500 animate-pulse" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
+            title={isListening ? "Stop listening" : "Start voice input"}
+          >
+            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+          </button>
           <input
             ref={inputRef}
             type="text"
             className="input-glass flex-1"
             style={{ padding: "12px 16px" }}
-            placeholder="Ask about a suspicious message, call, or situation..."
+            placeholder={isListening ? "Listening..." : "Ask about a suspicious message, call, or situation..."}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
             disabled={typing}
           />
+          <button
+            onClick={() => setIsSpeakingEnabled(!isSpeakingEnabled)}
+            className="p-3 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
+            title={isSpeakingEnabled ? "Turn off voice responses" : "Turn on voice responses"}
+          >
+            {isSpeakingEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </button>
           <button
             className="btn-primary p-3"
             style={{ borderRadius: 12 }}
