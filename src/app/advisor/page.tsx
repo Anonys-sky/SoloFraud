@@ -146,6 +146,7 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
       }
       
       // We got the response cleanly, so let's parse the JSON text
+
       const data = await response.json();
       
       // Build the AI's reply message object

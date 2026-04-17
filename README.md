@@ -71,11 +71,11 @@ npm run dev
 # 5. Open http://localhost:3000 in your browser
 ## 🔮 SoloFraud 2030: The National Security Roadmap
 
-SoloFraud is designed as an evolving sovereign ecosystem. Our R&D pipeline includes:
+SoloFraud is designed as an evolving sovereign ecosystem. Our roadmap for the nation includes:
 
-1. **AI Voice Defense (Active Call Screening):** Real-time transcription of incoming calls via Google Cloud Speech-to-Text, triggering an instant AI risk-overlay to prevent tele-scams.
-2. **Email Fraud Sentinel:** Automated background scanning of indigenous enterprise emails using Cloud Eventarc, identifying impersonation attempts and phishing domains before they reach the inbox.
-3. **PDRM Integration:** Direct API linkage to the NSRC (997) portal for sub-second report validation and financial fund-freezing procedures.
+1. **Phase 1 (LIVE): AI Voice Interface (STT/TTS):** Real-time voice transcription and audible security guidance powered by browser-level Speech-to-Text and Synthesis APIs.
+2. **Phase 2: Email Fraud Sentinel:** Automated background scanning of indigenous enterprise emails using Cloud Eventarc to identify phishing and domain clones.
+3. **Phase 3: Real-time Video/Deepfake Detection:** Deep-learning filters to identify Deepfake impersonations during video calls, directly linked to NSRC (997) fund-freezing procedures.
 
 ## ⚖️ Declarations & Ethical Compliance (Section 4 Mandatory)
 
