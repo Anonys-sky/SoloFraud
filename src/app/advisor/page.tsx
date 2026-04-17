@@ -77,6 +77,8 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
     setInput("");
     setTyping(true);
 
+    // Send the user's message to our custom Next.js backend API
+    // We send the ENTIRE message history so the AI has context of the conversation
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -88,8 +90,10 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
         throw new Error("Failed to connect to AI Agent API");
       }
       
+      // We got the response cleanly, so let's parse the JSON text
       const data = await response.json();
       
+      // Build the AI's reply message object
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -97,6 +101,7 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
         timestamp: new Date(),
       };
 
+      // Add it to the screen!
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
       console.error(error);

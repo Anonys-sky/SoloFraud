@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, limit, onSnapshot, Timestamp } from "firebase/firestore";
 import {
   BarChart3,
   Shield,
@@ -28,7 +30,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-/* ─── Mock Data ─── */
+/* ───── Mock Data ───── */
 const statsCards = [
   { label: "Total Reports", value: "39,247", change: "+12.4%", up: true, icon: Flag, color: "#354761", colorClass: "teal" },
   { label: "Scams Blocked", value: "28,103", change: "+18.7%", up: true, icon: Shield, color: "#82BCD5", colorClass: "blue" },
@@ -46,14 +48,13 @@ const scamTypes = [
   { name: "TAC/OTP Phishing", count: 1227, pct: 3.1, trend: "flat", icon: Smartphone, color: "#5a9bb5", losses: "RM50M" },
 ];
 
-const recentReports = [
-  { time: "2 min ago", type: "Macau Scam", source: "SMS", status: "confirmed", detail: "+60 11-XXXX-4521 impersonating PDRM", location: "Kuala Lumpur" },
-  { time: "8 min ago", type: "Phishing URL", source: "WhatsApp", status: "confirmed", detail: "maybank-secure-login.cc → credential harvest", location: "Selangor" },
-  { time: "15 min ago", type: "Investment Scam", source: "Telegram", status: "investigating", detail: "GoldTradeX group promising 300% ROI", location: "Johor" },
-  { time: "22 min ago", type: "Parcel Scam", source: "SMS", status: "confirmed", detail: "Fake PosLaju customs payment RM12.90", location: "Penang" },
-  { time: "31 min ago", type: "Love Scam", source: "Facebook", status: "investigating", detail: "Fake military profile targeting women 40+", location: "Sabah" },
-  { time: "45 min ago", type: "Job Scam", source: "WhatsApp", status: "confirmed", detail: "E-commerce task scam, initial deposit RM300", location: "Perak" },
-  { time: "1 hr ago", type: "TAC Phishing", source: "SMS", status: "confirmed", detail: "Fake CIMB alert requesting TAC code", location: "Melaka" },
+const MOCK_REPORTS = [
+  { time: "2 min ago", type: "Macau Scam", status: "confirmed", detail: "+60 11-XXXX-4521 impersonating PDRM", location: "Kuala Lumpur" },
+  { time: "8 min ago", type: "Phishing URL", status: "confirmed", detail: "maybank-secure-login.cc → credential harvest", location: "Selangor" },
+  { time: "15 min ago", type: "Investment Scam", status: "investigating", detail: "GoldTradeX group promising 300% ROI", location: "Johor" },
+  { time: "22 min ago", type: "Parcel Scam", status: "confirmed", detail: "Fake PosLaju customs payment RM12.90", location: "Penang" },
+  { time: "31 min ago", type: "Love Scam", status: "investigating", detail: "Fake military profile targeting women 40+", location: "Sabah" },
+  { time: "45 min ago", type: "Job Scam", status: "confirmed", detail: "E-commerce task scam, initial deposit RM300", location: "Perak" },
 ];
 
 const stateData = [
@@ -76,52 +77,99 @@ const hourlyData = [
 
 export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("7d");
+  const [displayReports, setDisplayReports] = useState<any[]>(MOCK_REPORTS);
   const maxHourly = Math.max(...hourlyData.map(d => d.count));
 
+  // 🏥 Real-time Listener for Firestore
+  useEffect(() => {
+    const q = query(
+      collection(db, "reports"),
+      orderBy("timestamp", "desc"),
+      limit(10)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const reports = snapshot.docs.map(doc => {
+        const data = doc.data();
+        // Convert Firestore Timestamp to readable "X min ago"
+        let timeStr = "Just now";
+        if (data.timestamp instanceof Timestamp) {
+          const seconds = Math.floor((Date.now() - data.timestamp.toMillis()) / 1000);
+          if (seconds < 60) timeStr = "Just now";
+          else if (seconds < 3600) timeStr = `${Math.floor(seconds / 60)} min ago`;
+          else timeStr = `${Math.floor(seconds / 3600)} hr ago`;
+        }
+
+        return {
+          id: doc.id,
+          time: timeStr,
+          type: data.scamType || "General Scam",
+          status: data.status || "confirmed",
+          detail: data.text?.substring(0, 80) + "..." || "No details available",
+          location: data.location || "Malaysia",
+          isLive: true
+        };
+      });
+
+      // Merge live reports with original mock data to keep history full
+      const combined = [...reports, ...MOCK_REPORTS].slice(0, 8);
+      setDisplayReports(combined);
+    }, (error) => {
+      console.warn("Firestore listener fallback to mock data:", error);
+      setDisplayReports(MOCK_REPORTS);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px 80px", width: "100%", minHeight: "100vh" }}>
+    <div style={{ maxWidth: 1240, margin: "0 auto", padding: "80px 24px 100px", width: "100%", minHeight: "100vh" }}>
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[rgba(53,71,97,0.08)]">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 rounded-xl" style={{ background: "rgba(213,55,70,0.06)" }}>
-                <BarChart3 size={22} style={{ color: "#D53746" }} />
+            <div className="flex items-center gap-4 mb-2">
+              <div className="p-3 rounded-2xl shadow-sm" style={{ background: "rgba(213,55,70,0.06)", border: "1px solid rgba(213,55,70,0.10)" }}>
+                <BarChart3 size={24} style={{ color: "#D53746" }} />
               </div>
-              <h1 className="text-2xl font-bold">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight">
                 Threat <span className="gradient-text">Dashboard</span>
               </h1>
             </div>
-            <p className="text-sm text-[var(--text-muted)] ml-12">
-              Real-time scam intelligence from community reports across Malaysia
+            <p className="text-sm text-[var(--text-muted)] font-medium max-w-xl">
+              Real-time scam intelligence grounded in community reports. 
+              Our AI monitors emerging vectors across all Malaysian states to provide preemptive defense.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {(["24h", "7d", "30d"] as const).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
-                style={{
-                  background: timeRange === range ? "rgba(53,71,97,0.08)" : "transparent",
-                  border: `1px solid ${timeRange === range ? "rgba(53,71,97,0.18)" : "var(--border-glass)"}`,
-                  color: timeRange === range ? "#354761" : "var(--text-muted)",
-                }}
-              >
-                {range}
-              </button>
-            ))}
-            <div className="flex items-center gap-1.5 ml-3 px-3 py-2 rounded-lg"
-              style={{ background: "rgba(90,155,181,0.08)", border: "1px solid rgba(90,155,181,0.15)" }}>
-              <span className="w-2 h-2 rounded-full animate-pulse-shield" style={{ background: "#5a9bb5" }} />
-              <span className="text-xs font-medium" style={{ color: "#5a9bb5" }}>Live</span>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex p-1 bg-[rgba(53,71,97,0.04)] rounded-xl border border-[rgba(53,71,97,0.06)]">
+              {(["24h", "7d", "30d"] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className="px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                  style={{
+                    background: timeRange === range ? "white" : "transparent",
+                    boxShadow: timeRange === range ? "0 2px 8px rgba(53,71,97,0.08)" : "none",
+                    color: timeRange === range ? "#354761" : "var(--text-muted)",
+                  }}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl animate-glow"
+              style={{ background: "rgba(90,155,181,0.08)", border: "1px solid rgba(90,155,181,0.2)" }}>
+              <span className="w-2.5 h-2.5 rounded-full animate-pulse-shield" style={{ background: "#5a9bb5" }} />
+              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#5a9bb5" }}>Live Threat Feed</span>
             </div>
           </div>
         </div>
       </motion.div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         {statsCards.map((stat, i) => {
           const Icon = stat.icon;
           return (
@@ -130,75 +178,83 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
-              className={`glass-card-static stat-card ${stat.colorClass} p-5`}
+              className={`glass-card-static stat-card ${stat.colorClass} p-6 shadow-md hover:shadow-xl transition-shadow relative overflow-hidden`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-xl" style={{ background: `${stat.color}12` }}>
-                  <Icon size={18} style={{ color: stat.color }} />
+              <Icon size={80} style={{ position: 'absolute', right: -10, bottom: -10, opacity: 0.03, color: stat.color }} />
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <div className="p-2.5 rounded-xl border" style={{ background: `${stat.color}08`, borderColor: `${stat.color}15` }}>
+                  <Icon size={20} style={{ color: stat.color }} />
                 </div>
-                <div className={`flex items-center gap-1 text-xs font-semibold`}
-                  style={{ color: stat.up ? "#5a9bb5" : "#D53746" }}>
-                  {stat.up ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider`}
+                  style={{ background: stat.up ? "rgba(90,155,181,0.1)" : "rgba(213,55,70,0.1)", color: stat.up ? "#5a9bb5" : "#D53746" }}>
+                  {stat.up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
                   {stat.change}
                 </div>
               </div>
-              <div className="text-2xl font-bold mb-1">{stat.value}</div>
-              <div className="text-xs text-[var(--text-muted)]">{stat.label}</div>
+              <div className="text-3xl font-black mb-1.5 tracking-tight relative z-10">{stat.value}</div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)] relative z-10">{stat.label}</div>
             </motion.div>
           );
         })}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
           {/* Activity Chart */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="glass-card-static p-5">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <Activity size={16} style={{ color: "#354761" }} />
-                Scam Activity Today
+            className="glass-card-static p-8 shadow-md">
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-black/5">
+              <h3 className="text-lg font-bold tracking-tight flex items-center gap-3">
+                <Activity size={20} style={{ color: "#354761" }} />
+                Scam Activity Velocity
               </h3>
-              <div className="text-xs text-[var(--text-muted)]">Reports per 2-hour window</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] px-3 py-1 bg-black/5 rounded-full">
+                Interval: 120min
+              </div>
             </div>
-            <div className="flex items-end gap-2" style={{ height: 140 }}>
-              {hourlyData.map((d, i) => (
-                <motion.div
-                  key={d.hour}
-                  className="flex-1 flex flex-col items-center gap-1"
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ delay: i * 0.05, duration: 0.4 }}
-                  style={{ transformOrigin: "bottom" }}
-                >
-                  <div className="text-[10px] text-[var(--text-muted)]">{d.count}</div>
-                  <div
-                    className="w-full rounded-t-md transition-all hover:opacity-80"
-                    style={{
-                      height: `${(d.count / maxHourly) * 100}px`,
-                      background: d.count > 200
-                        ? "linear-gradient(180deg, #D53746, rgba(213,55,70,0.3))"
-                        : d.count > 100
-                        ? "linear-gradient(180deg, #c9716e, rgba(201,113,110,0.3))"
-                        : "linear-gradient(180deg, #82BCD5, rgba(130,188,213,0.3))",
-                      minHeight: 4,
-                    }}
-                  />
-                  <div className="text-[9px] text-[var(--text-muted)]">{d.hour}</div>
-                </motion.div>
-              ))}
+            
+            <div className="overflow-x-auto pb-4 -mx-2 px-2 scrollbar-none">
+              <div className="flex items-end gap-3 md:gap-4 min-w-[600px] md:min-w-0" style={{ height: 180 }}>
+                {hourlyData.map((d, i) => (
+                  <motion.div
+                    key={d.hour}
+                    className="flex-1 flex flex-col items-center gap-2 group"
+                    initial={{ scaleY: 0 }}
+                    animate={{ scaleY: 1 }}
+                    transition={{ delay: i * 0.05, duration: 0.4 }}
+                    style={{ transformOrigin: "bottom" }}
+                  >
+                    <div className="text-[9px] font-bold text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity mb-1">{d.count}</div>
+                    <div
+                      className="w-full max-w-[32px] rounded-t-lg transition-all relative overflow-hidden"
+                      style={{
+                        height: `${(d.count / maxHourly) * 120}px`,
+                        background: d.count > 200
+                          ? "linear-gradient(180deg, #D53746, #c9716e)"
+                          : d.count > 100
+                          ? "linear-gradient(180deg, #c9716e, #82BCD5)"
+                          : "linear-gradient(180deg, #82BCD5, #5a9bb5)",
+                        minHeight: 6,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase mt-1">{d.hour}</div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </motion.div>
 
-          {/* Scam Types Breakdown */}
+          {/* Scam Types */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="glass-card-static p-5">
-            <h3 className="text-sm font-semibold flex items-center gap-2 mb-4">
-              <Eye size={16} style={{ color: "#82BCD5" }} />
-              Scam Types Breakdown
+            className="glass-card-static p-8 shadow-md">
+            <h3 className="text-lg font-bold tracking-tight flex items-center gap-3 mb-8 pb-4 border-b border-black/5">
+              <Eye size={20} style={{ color: "#82BCD5" }} />
+              Composition by Threat Type
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-6">
               {scamTypes.map((scam, i) => {
                 const Icon = scam.icon;
                 return (
@@ -207,33 +263,33 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 + i * 0.06 }}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-5"
                   >
-                    <div className="p-1.5 rounded-lg" style={{ background: `${scam.color}12` }}>
-                      <Icon size={14} style={{ color: scam.color }} />
+                    <div className="p-3 rounded-2xl border border-[var(--border-glass)]" style={{ background: `${scam.color}08` }}>
+                      <Icon size={18} style={{ color: scam.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold truncate">{scam.name}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] text-[var(--text-muted)]">{scam.losses}</span>
-                          <span className="text-xs font-medium" style={{ color: scam.color }}>{scam.pct}%</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-bold truncate tracking-tight">{scam.name}</span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{scam.losses} Est. Loss</span>
+                          <span className="text-sm font-black" style={{ color: scam.color }}>{scam.pct}%</span>
                         </div>
                       </div>
-                      <div className="risk-meter" style={{ height: 5 }}>
+                      <div className="risk-meter" style={{ height: 6 }}>
                         <motion.div
                           className="risk-meter-fill"
                           style={{ background: scam.color }}
                           initial={{ width: 0 }}
                           animate={{ width: `${scam.pct}%` }}
-                          transition={{ duration: 0.8, delay: 0.4 + i * 0.08 }}
+                          transition={{ duration: 1, delay: 0.5 + i * 0.08 }}
                         />
                       </div>
                     </div>
-                    <div className="shrink-0">
-                      {scam.trend === "up" && <TrendingUp size={14} style={{ color: "#D53746" }} />}
-                      {scam.trend === "down" && <TrendingDown size={14} style={{ color: "#5a9bb5" }} />}
-                      {scam.trend === "flat" && <span className="text-[var(--text-muted)] text-xs">—</span>}
+                    <div className="shrink-0 p-1.5 rounded-lg bg-[rgba(53,71,97,0.02)]">
+                      {scam.trend === "up" && <TrendingUp size={16} style={{ color: "#D53746" }} />}
+                      {scam.trend === "down" && <TrendingDown size={16} style={{ color: "#5a9bb5" }} />}
+                      {scam.trend === "flat" && <span className="text-[var(--text-muted)] text-xs px-1">—</span>}
                     </div>
                   </motion.div>
                 );
@@ -243,73 +299,76 @@ export default function DashboardPage() {
 
           {/* Recent Reports */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-            className="glass-card-static p-5">
-            <h3 className="text-sm font-semibold flex items-center gap-2 mb-4">
-              <Clock size={16} style={{ color: "#6B7E8C" }} />
-              Recent Community Reports
-              <span className="badge-info text-[10px] ml-auto">Live feed</span>
-            </h3>
-            <div className="space-y-2">
-              {recentReports.map((report, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + i * 0.06 }}
-                  className="flex items-start gap-3 p-3 rounded-xl transition-all hover:bg-[rgba(53,71,97,0.03)]"
-                >
-                  <div className="shrink-0 mt-0.5">
-                    {report.status === "confirmed" ? (
-                      <CheckCircle size={16} style={{ color: "#D53746" }} />
-                    ) : (
-                      <AlertTriangle size={16} style={{ color: "#c9716e" }} />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-semibold">{report.type}</span>
-                      <span className={`badge ${report.status === "confirmed" ? "badge-danger" : "badge-warning"}`}
-                        style={{ fontSize: 9, padding: "2px 6px" }}>
-                        {report.status}
-                      </span>
+            className="glass-card-static p-8 shadow-md">
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-black/5">
+              <h3 className="text-lg font-bold tracking-tight flex items-center gap-3">
+                <Clock size={20} style={{ color: "#6B7E8C" }} />
+                Real-Time Community Logs
+              </h3>
+              <div className="badge-info text-[9px] font-black uppercase tracking-widest px-3 py-1 border border-[rgba(130,188,213,0.3)]">
+                Auto-Refreshing
+              </div>
+            </div>
+            <div className="space-y-3">
+              <AnimatePresence mode="popLayout">
+                {displayReports.map((report, i) => (
+                  <motion.div
+                    key={report.id || i}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    layout
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl transition-all border border-transparent hover:border-[var(--border-glass)] hover:bg-[rgba(53,71,97,0.02)] bg-white/30"
+                  >
+                    <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-sm border border-black/5">
+                      {report.status === "confirmed" ? (
+                        <CheckCircle size={20} style={{ color: "#D53746" }} />
+                      ) : (
+                        <AlertTriangle size={20} style={{ color: "#c9716e" }} />
+                      )}
                     </div>
-                    <p className="text-[11px] text-[var(--text-muted)] truncate">{report.detail}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-[10px] text-[var(--text-muted)] flex items-center gap-1">
-                      <MapPin size={10} />
-                      {report.location}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="text-sm font-bold tracking-tight">{report.type}</span>
+                        {report.isLive && (
+                          <span className="text-[8px] font-black bg-[#5a9bb5] text-white px-1.5 py-0.5 rounded leading-none">LIVE</span>
+                        )}
+                        <span className={`badge ${report.status === "confirmed" ? "badge-danger" : "badge-warning"} text-[9px] font-black uppercase tracking-widest px-2 py-0.5`}>
+                          {report.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)] truncate font-medium">{report.detail}</p>
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)]">{report.time}</div>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex flex-row sm:flex-col justify-between sm:items-end gap-1 sm:gap-0">
+                      <div className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1.5 uppercase tracking-wider">
+                        <MapPin size={10} style={{ color: "#c9716e" }} />
+                        {report.location}
+                      </div>
+                      <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">{report.time}</div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </motion.div>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* State Heatmap */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-            className="glass-card-static p-5">
-            <h3 className="text-sm font-semibold flex items-center gap-2 mb-4">
-              <MapPin size={16} style={{ color: "#c9716e" }} />
-              Reports by State
+            className="glass-card-static p-8 shadow-md">
+            <h3 className="text-lg font-bold tracking-tight flex items-center gap-3 mb-8 pb-4 border-b border-black/5">
+              <MapPin size={20} style={{ color: "#c9716e" }} />
+              Regional Density
             </h3>
-            <div className="space-y-2.5">
+            <div className="space-y-4">
               {stateData.map((s, i) => (
-                <motion.div
-                  key={s.state}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 + i * 0.05 }}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium">{s.state}</span>
-                    <span className="text-[10px] text-[var(--text-muted)]">{s.reports.toLocaleString()}</span>
+                <div key={s.state}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold tracking-tight">{s.state}</span>
+                    <span className="text-[11px] font-black text-[var(--text-primary)]" style={{ opacity: 0.8 }}>{s.reports.toLocaleString()}</span>
                   </div>
-                  <div className="risk-meter" style={{ height: 4 }}>
+                  <div className="risk-meter" style={{ height: 6 }}>
                     <motion.div
                       className="risk-meter-fill"
                       style={{
@@ -317,37 +376,39 @@ export default function DashboardPage() {
                           ? "linear-gradient(90deg, #D53746, #c9716e)"
                           : s.pct > 8
                           ? "linear-gradient(90deg, #c9716e, #82BCD5)"
-                          : "#82BCD5",
+                          : "linear-gradient(90deg, #82BCD5, #5a9bb5)",
                       }}
                       initial={{ width: 0 }}
                       animate={{ width: `${(s.pct / 22) * 100}%` }}
-                      transition={{ duration: 0.6, delay: 0.4 + i * 0.05 }}
+                      transition={{ duration: 0.8, delay: 0.4 + i * 0.05 }}
                     />
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </motion.div>
 
-          {/* Key Insights */}
+          {/* AI Insights */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-            className="glass-card-static p-5">
-            <h3 className="text-sm font-semibold flex items-center gap-2 mb-4">
-              <TrendingUp size={16} style={{ color: "#5a9bb5" }} />
-              AI-Generated Insights
+            className="glass-card-static p-8 shadow-md bg-white/40">
+            <h3 className="text-lg font-bold tracking-tight flex items-center gap-3 mb-8 pb-4 border-b border-black/5">
+              <TrendingUp size={20} style={{ color: "#5a9bb5" }} />
+              Agentic Insights
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {[
-                { emoji: "🚨", text: "Macau scam calls surge 23% this week, primarily targeting Klang Valley residents aged 30-45", severity: "high" },
-                { emoji: "📱", text: "New APK malware campaign detected — disguised as \"MySejahtera 2.0\" update via WhatsApp links", severity: "high" },
-                { emoji: "💼", text: "Job scams on Telegram increased 45% — fake e-commerce task groups requiring RM300+ deposits", severity: "medium" },
-                { emoji: "📈", text: "Crypto romance scams trending on Facebook Dating — targeting women aged 35-50 in East Malaysia", severity: "medium" },
-                { emoji: "✅", text: "PosLaju parcel scam reports declined 18% following MCMC public awareness campaign", severity: "low" },
+                { emoji: "🚨", text: "Macau scam calls surge 23% this week, primarily targeting Klang Valley residents aged 30-45", color: "#D53746" },
+                { emoji: "📱", text: "New APK malware campaign detected — disguised as \"MySejahtera 2.0\" update via WhatsApp links", color: "#D53746" },
+                { emoji: "💼", text: "Job scams on Telegram increased 45% — fake e-commerce task groups requiring RM300+ deposits", color: "#c9716e" },
+                { emoji: "📈", text: "Crypto romance scams trending on Facebook Dating — targeting women aged 35-50 in East Malaysia", color: "#c9716e" },
+                { emoji: "✅", text: "PosLaju parcel scam reports declined 18% following MCMC public awareness campaign", color: "#5a9bb5" },
               ].map((insight, i) => (
-                <div key={i} className="p-3 rounded-xl" style={{ background: "rgba(53,71,97,0.02)" }}>
-                  <div className="flex items-start gap-2">
-                    <span className="text-sm">{insight.emoji}</span>
-                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{insight.text}</p>
+                <div key={i} className="group p-4 rounded-2xl border border-[var(--border-glass)] bg-white/60 transition-all hover:bg-white hover:shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg" style={{ background: `${insight.color}10` }}>
+                      {insight.emoji}
+                    </div>
+                    <p className="text-xs font-medium text-[var(--text-secondary)] leading-relaxed">{insight.text}</p>
                   </div>
                 </div>
               ))}
@@ -356,22 +417,22 @@ export default function DashboardPage() {
 
           {/* Emergency Contacts */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
-            className="glass-card-static p-5">
-            <h3 className="text-sm font-semibold flex items-center gap-2 mb-4">
-              <Phone size={16} style={{ color: "#D53746" }} />
-              Emergency Contacts
+            className="glass-card-static p-8 shadow-inner" style={{ border: '2px dashed var(--border-glass)', background: 'rgba(213,55,70,0.02)' }}>
+            <h3 className="text-lg font-bold tracking-tight flex items-center gap-3 mb-6">
+              <Phone size={20} style={{ color: "#D53746" }} />
+              Rapid Response
             </h3>
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {[
-                { name: "NSRC (Scam Response)", number: "997", color: "#D53746" },
-                { name: "PDRM CCID", number: "03-2610 1559", color: "#354761" },
-                { name: "Bank Negara", number: "1-300-88-5465", color: "#82BCD5" },
-                { name: "MCMC", number: "1-800-188-030", color: "#6B7E8C" },
+                { name: "NSRC (Scam Response)", number: "997", color: "#D53746", desc: "Mon-Sun, 8am-8pm" },
+                { name: "PDRM CCID", number: "03-2610 1559", color: "#354761", desc: "WhatsApp Help" },
               ].map((contact) => (
-                <div key={contact.name} className="flex items-center justify-between p-2.5 rounded-xl"
-                  style={{ background: "rgba(53,71,97,0.02)" }}>
-                  <span className="text-xs text-[var(--text-secondary)]">{contact.name}</span>
-                  <span className="text-xs font-mono font-bold" style={{ color: contact.color }}>{contact.number}</span>
+                <div key={contact.name} className="flex flex-col p-4 rounded-2xl bg-white shadow-sm border border-black/5 hover:border-[rgba(213,55,70,0.3)] transition-all cursor-pointer">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">{contact.name}</span>
+                    <span className="text-lg font-black tracking-tight" style={{ color: contact.color }}>{contact.number}</span>
+                  </div>
+                  <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{contact.desc}</div>
                 </div>
               ))}
             </div>

@@ -1,0 +1,22 @@
+MALAYSIA CYBER-FRAUD THREAT INTELLIGENCE (GROUNDING DATA)
+
+1. NATIONAL SCAM RESPONSE CENTRE (NSRC)
+- Contact: Dial 997 (8am - 8pm daily).
+- Purpose: Immediate reporting of financial scams to freeze outflow of funds from bank accounts.
+- Key Agency: Collaboration between PDRM, BNM, MCMC, and financial institutions.
+
+2. PENAL CODE SECTION 420 (CHEATING)
+- Cheating and dishonestly inducing delivery of property.
+- Punishment: Mandatory imprisonment (1 to 10 years), whipping, and fine.
+- Relevance: Primary law used for charging online scammers and "mule account" holders in Malaysia.
+
+3. COMMON SCAM TAXONOMY IN MALAYSIA (2023-2024)
+- MACAU SCAM: Impersonation of officials (LHDN, PDRM, PosLaju) via VoIP to demand payment or private info.
+- E-COMMERCE SCAM: Non-existent goods on platforms like Facebook Marketplace or Telegram.
+- INVESTMENT SCAM: Guaranteed "high returns" on fake crypto or stock platforms (e.g., "Pig Butchering").
+- APK FRAUD: Tricking users into installing malicious Android apps (.apk) to sniff SMS/OTP for bank theft.
+
+4. SEMAKMULE CRITERIA (PDRM)
+- Data source: PDRM Commercial Crime Investigation Department (CCID) database.
+- Risk levels: High Risk (Multiple reports found), Caution (Previous history of suspicious activity), Clean (No records found).
+- User Advice: Never transfer money to personal accounts if the business claims to be an "Official Company".
