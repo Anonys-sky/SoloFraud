@@ -26,9 +26,9 @@ const scamAnalysisSchema = z.object({
  */
 export async function runAgenticChat(chatHistory: any[]) {
   const models = [
-    "googleai/gemini-1.5-flash-latest",
-    "googleai/gemini-1.5-flash-8b",
-    "googleai/gemini-1.5-pro-latest"
+    "googleai/gemini-2.5-flash",
+    "googleai/gemini-2.5-flash-lite",
+    "googleai/gemini-2.5-pro"
   ];
 
   for (const model of models) {
@@ -64,7 +64,7 @@ export async function runAgenticChat(chatHistory: any[]) {
 /**
  * Specialized Flow: analyzeMessageFlow
  * This flow is used by the Scam Analyzer dashboard to provide structured risk metrics.
- * Now equipped with Triple-Layer Resilience to solve API limit issues.
+ * Now equipped with 2026-standard Triple-Layer Resilience to solve API limit issues.
  */
 export const analyzeMessageFlow = ai.defineFlow(
   {
@@ -74,9 +74,9 @@ export const analyzeMessageFlow = ai.defineFlow(
   },
   async (input) => {
     const analysisModels = [
-      "googleai/gemini-1.5-flash-latest",
-      "googleai/gemini-1.5-flash-8b",
-      "googleai/gemini-1.5-pro-latest"
+      "googleai/gemini-2.5-flash",
+      "googleai/gemini-2.5-flash-lite",
+      "googleai/gemini-2.5-pro"
     ];
 
     for (const model of analysisModels) {
@@ -97,6 +97,6 @@ export const analyzeMessageFlow = ai.defineFlow(
       }
     }
 
-    throw new Error("All analysis models are currently undergoing maintenance or rate-limiting. Please try again shortly.");
+    throw new Error("Our analysis models are currently undergoing routine 2026 maintenance. Please try again in 30 seconds.");
   }
 );
