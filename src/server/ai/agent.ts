@@ -1,6 +1,7 @@
 import { ai } from "../../lib/genkit";
 import { querySemakmuleDB, draftPoliceReport } from "./tools";
 import { vertexAISearchRetriever } from "./retriever";
+import { runRescueAI, runRescueAnalysis } from "@/lib/rescue-ai";
 import { z } from "zod";
 
 /**
@@ -25,9 +26,12 @@ const scamAnalysisSchema = z.object({
  * Implements a robust fallback strategy to handle API rate limits.
  */
 export async function runAgenticChat(chatHistory: any[]) {
+  // HYBRID FAILOVER: Priority (AI Studio) -> Resilience (Vertex AI)
   const models = [
     "googleai/gemini-1.5-flash-latest",
-    "googleai/gemini-1.5-pro-latest"
+    "googleai/gemini-1.5-pro-latest",
+    "vertexai/gemini-1.5-flash-002",
+    "vertexai/gemini-1.5-pro-002"
   ];
 
   for (const model of models) {
@@ -59,8 +63,14 @@ export async function runAgenticChat(chatHistory: any[]) {
       continue; // Try next model in the tier
     }
   }
-  
-  return "I'm currently experiencing high demand. Please try again in a moment or contact the NSRC at 997 for immediate assistance.";
+    // TERMINAL RESCUE: If all Genkit providers fail, use direct SDK
+    try {
+      console.log(`[Flow] Genkit Exhausted. Triggering SDK Rescue...`);
+      return await runRescueAI(chatHistory[chatHistory.length - 1].content);
+    } catch (rescueError) {
+      console.error(`[Flow] SDK Rescue failed:`, rescueError);
+      return "I'm currently experiencing high demand. Please try again in a moment or contact the NSRC at 997 for immediate assistance.";
+    }
 }
 
 
@@ -121,9 +131,12 @@ export const analyzeMessageFlow = ai.defineFlow(
   },
   async (input) => {
     // We prioritize Flash models for high availability during hackathons
+    // HYBRID FAILOVER: Priority (AI Studio) -> Resilience (Vertex AI)
     const analysisModels = [
       "googleai/gemini-1.5-flash-latest",
-      "googleai/gemini-1.5-pro-latest"
+      "googleai/gemini-1.5-pro-latest",
+      "vertexai/gemini-1.5-flash-002",
+      "vertexai/gemini-1.5-pro-002"
     ];
 
     let lastErrorMessage = "";
@@ -151,8 +164,15 @@ export const analyzeMessageFlow = ai.defineFlow(
       }
     }
 
-    // FINAL FAIL-SAFE: If all models fail (429, 503, etc), return heuristic analysis
-    console.warn("[Flow] ALL AI MODELS EXHAUSTED. Triggering Heuristic Fail-Safe.");
-    return runBasicHeuristicAnalysis(input.message) as any;
+    // TERMINAL RESCUE: If all Genkit providers fail, use direct SDK
+    try {
+      console.log(`[Flow] Genkit Exhausted. Triggering SDK Rescue Analysis...`);
+      return await runRescueAnalysis(input.message);
+    } catch (rescueError) {
+      console.error(`[Flow] SDK Rescue Analysis failed:`, rescueError);
+      // FINAL FAIL-SAFE: If even SDK fails, return heuristic analysis
+      console.warn("[Flow] ALL AI ENGINES EXHAUSTED. Triggering Heuristic Fail-Safe.");
+      return runBasicHeuristicAnalysis(input.message) as any;
+    }
   }
 );
