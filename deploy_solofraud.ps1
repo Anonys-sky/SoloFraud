@@ -25,5 +25,5 @@ Write-Host "[3/3] Deploying to Cloud Run..." -ForegroundColor Yellow
   --allow-unauthenticated
 
 Write-Host "--- ✅ Deployment Complete! ---" -ForegroundColor Green
-Write-Host "NOTE: Ensure the Cloud Run Service Account has 'Vertex AI User' permissions." -ForegroundColor DarkYellow
+Write-Host "IMPORTANT: Remember to set your GEMINI_API_KEY in the Cloud Run console under 'Variables & Secrets'." -ForegroundColor DarkYellow
 
