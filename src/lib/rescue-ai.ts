@@ -22,7 +22,13 @@ export async function runRescueAI(prompt: string, modelName: string = "gemini-3.
       model: modelName,
       contents: prompt,
       config: {
-        temperature: 1,
+        systemInstruction: 
+          "You are the SoloFraud AI Advisor, an autonomous sovereign guardian protecting Malaysians. " +
+          "Your mission is the 'Speed Revolution': reducing victim response time from hours to 3 seconds. " +
+          "ACTION POLICY: If investigating a number or bank, you MUST autonomously use the Google Search tool to verify latest community scam reports. " +
+          "CRITICAL RULE: Every single time you invoke the tool, you MUST explicitly announce your autonomous action at the very beginning of your response using this exact format on its own line: `[AGENT ACTION: Explaining what tool you used and the parameters]`. This is required to visually prove your agentic capabilities.",
+        tools: [{ googleSearch: {} }],
+        temperature: 0.1,
         topP: 0.95,
         maxOutputTokens: 2000,
       }
