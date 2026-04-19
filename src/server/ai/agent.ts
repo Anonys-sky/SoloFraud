@@ -121,52 +121,17 @@ function runBasicHeuristicAnalysis(message: string) {
   };
 }
 
-export const analyzeMessageFlow = ai.defineFlow(
-  {
-    name: "analyzeMessageFlow",
-    inputSchema: z.object({ message: z.string() }),
-    outputSchema: scamAnalysisSchema,
-  },
-  async (input) => {
-    // PRIMARY AI: Running heavily fortified through Google AI Studio API Keys
-    const analysisModels = [
-      "googleai/gemini-1.5-flash",
-      "googleai/gemini-1.5-pro"
-    ];
-
-    let lastErrorMessage = "";
-
-    for (const model of analysisModels) {
-      try {
-        console.log(`[Flow] Attempting analysis with ${model}...`);
-        const response = await ai.generate({
-          model: model,
-          prompt: `Analyze this message for scam risks: ${input.message}`,
-          output: { schema: scamAnalysisSchema },
-          tools: [querySemakmuleDB],
-          config: { maxOutputTokens: 2000 },
-        });
-        
-        if (response.output) return response.output;
-      } catch (error: any) {
-        lastErrorMessage = error.message;
-        console.warn(`[Flow] ${model} failed:`, lastErrorMessage);
-        
-        // If we hit a direct quota limit (429), don't bother waiting for other models
-        // if they likely share the same quota. But in tier fallback, we try anyway.
-        continue;
-      }
-    }
-
-    // TERMINAL RESCUE: If all Genkit providers fail, use direct SDK
-    try {
-      console.log(`[Flow] Genkit Exhausted. Triggering SDK Rescue Analysis...`);
-      return await runRescueAnalysis(input.message);
-    } catch (rescueError) {
-      console.error(`[Flow] SDK Rescue Analysis failed:`, rescueError);
-      // FINAL FAIL-SAFE: If even SDK fails, return heuristic analysis
-      console.warn("[Flow] ALL AI ENGINES EXHAUSTED. Triggering Heuristic Fail-Safe.");
-      return runBasicHeuristicAnalysis(input.message) as any;
-    }
+/**
+ * Specialized Flow: analyzeMessageFlow
+ * Upgraded to natively use the Google GenAI SDK (Vertex Express), bypassing Genkit telemetry latency.
+ */
+export async function analyzeMessageFlow(input: { message: string }) {
+  try {
+    console.log(`[Flow] Triggering Native Analysis for: ${input.message.substring(0,20)}...`);
+    const analysis = await runRescueAnalysis(input.message);
+    return analysis;
+  } catch (error) {
+    console.error(`[Flow] Native Analysis failed, deploying Heuristic Shield:`, error);
+    return runBasicHeuristicAnalysis(input.message);
   }
-);
+}

@@ -42,6 +42,8 @@ export async function runRescueAnalysis(message: string) {
     Analyze this message for scam risks: "${message}"
     Return your response EXCLUSIVELY as a JSON object with this exact structure:
     {
+      "verdict": "SAFE" | "LOW_RISK" | "MEDIUM_RISK" | "HIGH_RISK",
+      "confidence": number between 0 and 100,
       "summary": "one sentence high level risk summary",
       "findings": [
         { "icon": "emoji", "label": "finding name", "detail": "finding detail", "severity": "low|medium|high" }
