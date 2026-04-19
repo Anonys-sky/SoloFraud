@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 // We moved our AI agent logic to the server folder to keep front and back ends clearly separated!
 import { runAgenticChat } from "@/server/ai/agent";
 import { checkRateLimit } from "@/lib/security";
