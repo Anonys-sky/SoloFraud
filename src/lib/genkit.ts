@@ -9,10 +9,6 @@ import { vertexAI } from "@genkit-ai/vertexai";
 export const ai = genkit({
   plugins: [
     googleAI({ apiKey: process.env.GEMINI_API_KEY }),
-    vertexAI({ 
-      location: "us-central1", 
-      projectId: "solofraud-my-2030" 
-    }),
   ],
   model: "googleai/gemini-1.5-flash-latest",
 });

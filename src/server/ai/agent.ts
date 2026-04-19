@@ -26,10 +26,8 @@ const scamAnalysisSchema = z.object({
  * Implements a robust fallback strategy to handle API rate limits.
  */
 export async function runAgenticChat(chatHistory: any[]) {
-  // VERTEX PRIORITY: Using Google Cloud credits for maximum stability
+  // PRIMARY AI: Running heavily fortified through Google AI Studio API Keys
   const models = [
-    "vertexai/gemini-1.5-flash-001",
-    "vertexai/gemini-1.5-pro-001",
     "googleai/gemini-1.5-flash",
     "googleai/gemini-1.5-pro"
   ];
@@ -130,10 +128,8 @@ export const analyzeMessageFlow = ai.defineFlow(
     outputSchema: scamAnalysisSchema,
   },
   async (input) => {
-    // VERTEX PRIORITY: Using Google Cloud credits for maximum stability
+    // PRIMARY AI: Running heavily fortified through Google AI Studio API Keys
     const analysisModels = [
-      "vertexai/gemini-1.5-flash-001",
-      "vertexai/gemini-1.5-pro-001",
       "googleai/gemini-1.5-flash",
       "googleai/gemini-1.5-pro"
     ];

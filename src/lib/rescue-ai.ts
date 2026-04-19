@@ -1,21 +1,33 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 /**
- * SoloFraud Rescue AI SDK
- * This is a low-level implementation that bypasses Genkit dependency mismatches.
- * Used exclusively to guarantee 100% uptime for the Hackathon Demo.
+ * SoloFraud Rescue AI SDK - Vertex API Key Edition
+ * Ported directly from the Hackathon Python configuration.
  */
 
-// We prioritize the verified API key for the final demo rollout
-const GEN_AI_KEY = "AIzaSyA2BXRqtHYJXqDeCm8TQkOcRvMDKvQNWY0";
-const genAI = new GoogleGenerativeAI(GEN_AI_KEY);
+const GEN_AI_KEY = process.env.GEMINI_API_KEY as string;
 
-export async function runRescueAI(prompt: string, modelName: string = "gemini-1.5-flash") {
+// The new unified SDK natively supports Vertex AI Express keys (AQ...)
+const ai = new GoogleGenAI({
+  vertexai: {
+    project: "solofraud-my-2030", // Explicitly required for Vertex AI Express
+    location: "us-central1"
+  },
+  apiKey: GEN_AI_KEY 
+});
+
+export async function runRescueAI(prompt: string, modelName: string = "gemini-3.1-flash-lite-preview") {
   try {
-    const model = genAI.getGenerativeModel({ model: modelName });
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    return response.text();
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        temperature: 1,
+        topP: 0.95,
+        maxOutputTokens: 2000,
+      }
+    });
+    return response.text;
   } catch (error) {
     console.error(`[Rescue AI] Fatal Fallback Failure for ${modelName}:`, error);
     throw error;
@@ -39,12 +51,14 @@ export async function runRescueAnalysis(message: string) {
     }
   `;
 
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
-    generationConfig: { responseMimeType: "application/json" }
+  const response = await ai.models.generateContent({
+    model: "gemini-3.1-flash-lite-preview",
+    contents: prompt,
+    config: {
+      temperature: 0.1,
+      responseMimeType: "application/json"
+    }
   });
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return JSON.parse(response.text());
+  return JSON.parse(response.text);
 }
