@@ -16,10 +16,8 @@ function getAI() {
   }
 
   aiInstance = new GoogleGenAI({
-    vertexai: {
-      project: "solofraud-my-2030", 
-      location: "us-central1"
-    },
+    // Using the unified endpoint avoids regional service account conflicts
+    // while still honoring the 'AQ...' Vertex AI Sandbox key.
     apiKey: GEN_AI_KEY 
   });
   return aiInstance;
