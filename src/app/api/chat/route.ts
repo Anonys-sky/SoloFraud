@@ -1,9 +1,22 @@
 import { NextResponse } from "next/server";
 // We moved our AI agent logic to the server folder to keep front and back ends clearly separated!
 import { runAgenticChat } from "@/server/ai/agent";
+import { checkRateLimit } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
+    // LAYER 3: Gatekeeper Rate Limiting
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const rateLimit = checkRateLimit(ip);
+    
+    if (!rateLimit.success) {
+      console.warn(`[Security Alert] Rate limit exceeded for IP: ${ip}`);
+      return NextResponse.json({ 
+        error: "Too many requests", 
+        detail: "Security Gatekeeper: Limit exceeded." 
+      }, { status: 429 });
+    }
+
     // This is where we grab the chat history sent from the frontend user interface
     const { messages } = await req.json();
 

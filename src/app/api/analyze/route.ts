@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { analyzeMessageFlow } from "@/server/ai/agent";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { checkRateLimit } from "@/lib/security";
 
 // Incremental timeout to accommodate multi-model fallback chain
 export const maxDuration = 110;
@@ -17,6 +18,18 @@ const MALAYSIAN_CITIES = [
  */
 export async function POST(req: NextRequest) {
   try {
+    // LAYER 3: Gatekeeper Rate Limiting
+    const ip = req.headers.get("x-forwarded-for") || req.ip || "unknown";
+    const rateLimit = checkRateLimit(ip);
+    
+    if (!rateLimit.success) {
+      console.warn(`[Security Alert] Rate limit exceeded for IP: ${ip}`);
+      return NextResponse.json({ 
+        error: "Too many requests", 
+        detail: "Security Gatekeeper: Limit exceeded to protect system stability." 
+      }, { status: 429 });
+    }
+
     const { message } = await req.json();
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });

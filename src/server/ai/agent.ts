@@ -3,6 +3,7 @@ import { querySemakmuleDB, draftPoliceReport } from "./tools";
 import { vertexAISearchRetriever } from "./retriever";
 import { runRescueAI, runRescueAnalysis } from "@/lib/rescue-ai";
 import { z } from "zod";
+import { scrubPII, isMaliciousPrompt } from "@/lib/security";
 
 /**
  * Standard Scam Analysis Schema
@@ -26,6 +27,18 @@ const scamAnalysisSchema = z.object({
  * Implements a robust fallback strategy to handle API rate limits.
  */
 export async function runAgenticChat(chatHistory: any[]) {
+  const lastUserMessage = chatHistory[chatHistory.length - 1].parts[0].text;
+
+  // LAYER 1: Sentinel Security Check (Injection Guard)
+  const securityCheck = isMaliciousPrompt(lastUserMessage);
+  if (securityCheck.isMalicious) {
+    console.warn(`[Security Alert] Blocked suspicious prompt: ${securityCheck.reason}`);
+    return "SECURITY ALERT: This prompt has been flagged by the SoloFraud Sentinel for containing suspicious instructional patterns. Please maintain standard conversation.";
+  }
+
+  // LAYER 2: PII Redaction (Privacy Mask)
+  const sanitizedPrompt = scrubPII(lastUserMessage);
+
   // PRIMARY AI: Running heavily fortified through Google AI Studio API Keys
   const models = [
     "googleai/gemini-1.5-flash",
@@ -38,7 +51,7 @@ export async function runAgenticChat(chatHistory: any[]) {
       const response = await ai.generate({
         model: model,
         history: chatHistory.slice(0, -1),
-        prompt: chatHistory[chatHistory.length - 1].parts[0].text,
+        prompt: sanitizedPrompt,
         system: 
           "You are the SoloFraud AI Advisor, an autonomous sovereign guardian protecting Malaysians. " +
           "Your mission is the 'Speed Revolution': reducing victim response time from hours to 3 seconds. " +
@@ -127,8 +140,14 @@ function runBasicHeuristicAnalysis(message: string) {
  */
 export async function analyzeMessageFlow(input: { message: string }) {
   try {
-    console.log(`[Flow] Triggering Native Analysis for: ${input.message.substring(0,20)}...`);
-    const analysis = await runRescueAnalysis(input.message);
+    // LAYER 1 & 2: Security Sanitization
+    const securityCheck = isMaliciousPrompt(input.message);
+    if (securityCheck.isMalicious) throw new Error(`Security Violation: ${securityCheck.reason}`);
+
+    const sanitizedMessage = scrubPII(input.message);
+
+    console.log(`[Flow] Triggering Native Analysis for: ${sanitizedMessage.substring(0,20)}...`);
+    const analysis = await runRescueAnalysis(sanitizedMessage);
     return analysis;
   } catch (error) {
     console.error(`[Flow] Native Analysis failed, deploying Heuristic Shield:`, error);
