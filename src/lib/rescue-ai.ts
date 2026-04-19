@@ -5,19 +5,29 @@ import { GoogleGenAI } from "@google/genai";
  * Ported directly from the Hackathon Python configuration.
  */
 
-const GEN_AI_KEY = process.env.GEMINI_API_KEY as string;
+let aiInstance: any = null;
 
-// The new unified SDK natively supports Vertex AI Express keys (AQ...)
-const ai = new GoogleGenAI({
-  vertexai: {
-    project: "solofraud-my-2030", // Explicitly required for Vertex AI Express
-    location: "us-central1"
-  },
-  apiKey: GEN_AI_KEY 
-});
+function getAI() {
+  if (aiInstance) return aiInstance;
+  
+  const GEN_AI_KEY = process.env.GEMINI_API_KEY as string;
+  if (!GEN_AI_KEY) {
+    console.warn("[Rescue AI] Missing GEMINI_API_KEY. AI features will be disabled until configured.");
+  }
+
+  aiInstance = new GoogleGenAI({
+    vertexai: {
+      project: "solofraud-my-2030", 
+      location: "us-central1"
+    },
+    apiKey: GEN_AI_KEY 
+  });
+  return aiInstance;
+}
 
 export async function runRescueAI(prompt: string, modelName: string = "gemini-3.1-flash-lite-preview") {
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: modelName,
       contents: prompt,
@@ -59,6 +69,7 @@ export async function runRescueAnalysis(message: string) {
     }
   `;
 
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3.1-flash-lite-preview",
     contents: prompt,
