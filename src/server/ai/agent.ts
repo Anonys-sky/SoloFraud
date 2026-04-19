@@ -26,12 +26,12 @@ const scamAnalysisSchema = z.object({
  * Implements a robust fallback strategy to handle API rate limits.
  */
 export async function runAgenticChat(chatHistory: any[]) {
-  // HYBRID FAILOVER: Priority (AI Studio) -> Resilience (Vertex AI)
+  // VERTEX PRIORITY: Using Google Cloud credits for maximum stability
   const models = [
-    "googleai/gemini-1.5-flash-latest",
-    "googleai/gemini-1.5-pro-latest",
-    "vertexai/gemini-1.5-flash-002",
-    "vertexai/gemini-1.5-pro-002"
+    "vertexai/gemini-1.5-flash-001",
+    "vertexai/gemini-1.5-pro-001",
+    "googleai/gemini-1.5-flash",
+    "googleai/gemini-1.5-pro"
   ];
 
   for (const model of models) {
@@ -48,9 +48,9 @@ export async function runAgenticChat(chatHistory: any[]) {
           "you MUST PROACTIVELY invoke 'draftPoliceReport' immediately in your first response to provide the user with a head-start. " +
           "Do not just ask for information; take the first protective step for them. " +
           "ALWAYS check provided phone numbers or bank accounts using 'querySemakmuleDB'. " +
-          "Communicate in a professional, protective, and Malaysian-context-aware manner.",
+          "Communicate in a professional, protective, and Malaysian-context-aware manner. " +
+          "CRITICAL RULE: Every single time you invoke a tool (like querying the database or drafting a report), you MUST explicitly announce your autonomous action at the very beginning of your response using this exact format on its own line: `[AGENT ACTION: Explaining what tool you used and the parameters]`. This is required to visually prove your agentic capabilities.",
         tools: [querySemakmuleDB, draftPoliceReport],
-        retriever: vertexAISearchRetriever,
         config: { 
           temperature: 0.1,
           maxOutputTokens: 1000, // Efficiency limit
@@ -66,7 +66,7 @@ export async function runAgenticChat(chatHistory: any[]) {
     // TERMINAL RESCUE: If all Genkit providers fail, use direct SDK
     try {
       console.log(`[Flow] Genkit Exhausted. Triggering SDK Rescue...`);
-      return await runRescueAI(chatHistory[chatHistory.length - 1].content);
+      return await runRescueAI(chatHistory[chatHistory.length - 1].parts[0].text);
     } catch (rescueError) {
       console.error(`[Flow] SDK Rescue failed:`, rescueError);
       return "I'm currently experiencing high demand. Please try again in a moment or contact the NSRC at 997 for immediate assistance.";
@@ -130,13 +130,12 @@ export const analyzeMessageFlow = ai.defineFlow(
     outputSchema: scamAnalysisSchema,
   },
   async (input) => {
-    // We prioritize Flash models for high availability during hackathons
-    // HYBRID FAILOVER: Priority (AI Studio) -> Resilience (Vertex AI)
+    // VERTEX PRIORITY: Using Google Cloud credits for maximum stability
     const analysisModels = [
-      "googleai/gemini-1.5-flash-latest",
-      "googleai/gemini-1.5-pro-latest",
-      "vertexai/gemini-1.5-flash-002",
-      "vertexai/gemini-1.5-pro-002"
+      "vertexai/gemini-1.5-flash-001",
+      "vertexai/gemini-1.5-pro-001",
+      "googleai/gemini-1.5-flash",
+      "googleai/gemini-1.5-pro"
     ];
 
     let lastErrorMessage = "";
@@ -149,7 +148,6 @@ export const analyzeMessageFlow = ai.defineFlow(
           prompt: `Analyze this message for scam risks: ${input.message}`,
           output: { schema: scamAnalysisSchema },
           tools: [querySemakmuleDB],
-          retriever: vertexAISearchRetriever,
           config: { maxOutputTokens: 2000 },
         });
         

@@ -10,7 +10,7 @@ export const ai = genkit({
   plugins: [
     googleAI({ apiKey: process.env.GEMINI_API_KEY }),
     vertexAI({ 
-      location: "asia-southeast1", 
+      location: "us-central1", 
       projectId: "solofraud-my-2030" 
     }),
   ],

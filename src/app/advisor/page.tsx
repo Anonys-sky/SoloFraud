@@ -188,6 +188,23 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
           return null;
         }
 
+        const actionMatch = line.match(/\[AGENT ACTION:(.*?)\]/i);
+        if (actionMatch) {
+          const actionText = actionMatch[1].trim();
+          return (
+            <div key={i} className="my-3 p-3 rounded-xl flex gap-3 items-center" style={{ background: "rgba(130,188,213,0.15)", border: "1px solid rgba(130,188,213,0.3)" }}>
+              <div className="relative flex h-2 w-2 shrink-0 mt-0.5">
+                <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#82BCD5] opacity-75"></div>
+                <div className="relative inline-flex rounded-full h-2 w-2 bg-[#82BCD5]"></div>
+              </div>
+              <div className="font-mono text-xs text-[#5a9bb5]">
+                <strong className="tracking-widest uppercase text-[#82BCD5]">Autonomous Action Executed</strong><br/>
+                {actionText.replace(/`/g, '')}
+              </div>
+            </div>
+          );
+        }
+
         return (
           <span key={i}>
             <span dangerouslySetInnerHTML={{ __html: line }} />
