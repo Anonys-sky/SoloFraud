@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/googlefonts/noto-emoji/main/png/512/emoji_u1f6e1.png" alt="SoloFraud Logo" width="120" />
   <h1>SoloFraud</h1>
-  <p><strong>Your Sovereign AI Shield Against Digital Threats in Malaysia</strong></p>
+  <p><strong>Your Sovereign Autonomous Execution Agentic AI Against Digital Threats in Malaysia</strong></p>
   <p><i>Project 2030: MyAI Future Hackathon | Track 5: Secure Digital (FinTech & Security)</i></p>
 
   [![Next.js](https://img.shields.io/badge/Next.js-15+-black?logo=next.js)](https://nextjs.org/)
@@ -15,7 +15,7 @@
 
 ## 📖 Executive Summary & National Agenda
 
-SoloFraud is a production-hardened, **Agentic AI** cybersecurity platform designed to protect Malaysians from the multi-billion ringgit scam pandemic. We align with the **Malaysia Madani** framework and the **NIMP 2030** roadmap, transitioning Malaysia from a passive technology consumer to a **Sovereign Technology Builder**.
+SoloFraud is a production-hardened, **Autonomous Execution Agentic AI** cybersecurity platform designed to protect Malaysians from the multi-billion ringgit scam pandemic. We align with the **Malaysia Madani** framework and the **NIMP 2030** roadmap, transitioning Malaysia from a passive technology consumer to a **Sovereign Technology Builder**.
 
 By integrating advanced autonomous reasoning directly into the national security conversation, SoloFraud shrinks the response time from "victim in panic" to "actionable reporting" from hours to **3 seconds**.
 
@@ -28,7 +28,7 @@ SoloFraud operates as an **Autonomous Investigation Agent**, moving beyond simpl
 
 ### The Tech Stack
 - **The Brains**: A hybrid chain of `Gemini 1.5 Pro` (Deep Reasoning) and `Gemini 3.1 Flash-Lite` (Edge Performance).
-- **The Orchestrator**: Native **Agentic Function Calling** for cross-referencing live web data and threat intelligence.
+- **The Orchestrator**: Native **Autonomous Execution Agentic AI Function Calling** for cross-referencing live web data and threat intelligence.
 - **The infrastructure**: Deployed as a high-performance, containerized service on **Google Cloud Run**.
 - **The Database**: Real-time **Firebase Firestore** sync for national threat visibility.
 

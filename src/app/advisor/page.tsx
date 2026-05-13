@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  MessageCircle,
   Send,
   Shield,
   Bot,
@@ -16,11 +15,17 @@ import {
   VolumeX,
 } from "lucide-react";
 
+interface PoliceReportArtifact {
+  referenceId: string;
+  draftTemplate: string;
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  policeReport?: PoliceReportArtifact;
 }
 
 const suggestedQueries = [
@@ -38,7 +43,7 @@ export default function AdvisorPage() {
     {
       id: "welcome",
       role: "assistant",
-      content: `👋 **Salam & Hello!** I'm your **SoloFraud AI Advisor**.
+      content: `👋 **Salam & Hello!** I'm your **SoloFraud Autonomous Agentic Advisor**.
 
 I'm here to help you identify scams, understand threats, and stay safe online. Ask me anything about:
 
@@ -54,10 +59,16 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [speechLang, setSpeechLang] = useState<"ms-MY" | "en-US">("ms-MY");
   const [isSpeakingEnabled, setIsSpeakingEnabled] = useState(true);
+  const speechEnabledRef = useRef(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    speechEnabledRef.current = isSpeakingEnabled;
+  }, [isSpeakingEnabled]);
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -66,7 +77,7 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = "ms-MY"; // Default to Malay context, but handles English well
+      recognitionRef.current.lang = speechLang;
 
       recognitionRef.current.onresult = (event: any) => {
         let interimTranscript = "";
@@ -88,7 +99,7 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
         setIsListening(false);
       };
     }
-  }, []);
+  }, [speechLang]);
 
   const toggleListening = () => {
     if (isListening) {
@@ -102,10 +113,10 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
   };
 
   const speak = (text: string) => {
-    if (!isSpeakingEnabled || typeof window === "undefined") return;
-    window.speechSynthesis.cancel(); // Stop current speech
-    const utterance = new SpeechSynthesisUtterance(text.replace(/[#*]/g, "")); // Clean markdown
-    utterance.lang = "en-US"; // Default voice
+    if (!speechEnabledRef.current || typeof window === "undefined") return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text.replace(/[#*]/g, ""));
+    utterance.lang = speechLang;
     window.speechSynthesis.speak(utterance);
   };
 
@@ -155,6 +166,7 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
         role: "assistant",
         content: data.text,
         timestamp: new Date(),
+        policeReport: data.policeReport,
       };
 
       // Add it to the screen!
@@ -228,7 +240,7 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
             </h1>
             <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#5a9bb5" }} />
-              Powered by Google ADK Multi-Agent System
+              Active Protection System
             </p>
           </div>
         </div>
@@ -256,6 +268,35 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
                 <div className="text-sm leading-relaxed whitespace-pre-wrap">
                   {formatContent(msg.content)}
                 </div>
+                {msg.role === "assistant" &&
+                  msg.policeReport &&
+                  !msg.content.includes("OFFICIAL INITIAL REPORT") && (
+                  <div
+                    className="mt-3 rounded-xl p-3 text-left"
+                    style={{
+                      background: "rgba(53,71,97,0.06)",
+                      border: "1px solid rgba(53,71,97,0.12)",
+                    }}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <span className="text-xs font-semibold text-[#354761]">
+                        Police report draft · Ref {msg.policeReport.referenceId}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(msg.policeReport!.draftTemplate);
+                        }}
+                        className="text-[10px] px-2 py-1 rounded-lg bg-white/80 border border-[var(--border-glass)] text-[#354761] hover:bg-white"
+                      >
+                        Copy draft
+                      </button>
+                    </div>
+                    <pre className="text-[11px] leading-relaxed whitespace-pre-wrap font-mono text-[var(--text-secondary)] max-h-64 overflow-y-auto">
+                      {msg.policeReport.draftTemplate}
+                    </pre>
+                  </div>
+                )}
                 <div className="text-[10px] text-[var(--text-muted)] mt-2">
                   {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </div>
@@ -312,6 +353,15 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
 
       <div className="glass-card-static p-3">
         <div className="flex gap-2 items-center">
+          {/* Language Toggle */}
+          <button
+            onClick={() => setSpeechLang(speechLang === "ms-MY" ? "en-US" : "ms-MY")}
+            className="px-2 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all text-xs font-bold"
+            title={`Switch to ${speechLang === "ms-MY" ? "English" : "Bahasa Malaysia"}`}
+            style={{ color: "#354761", minWidth: 38, letterSpacing: "0.04em" }}
+          >
+            {speechLang === "ms-MY" ? "BM" : "EN"}
+          </button>
           <button
             onClick={toggleListening}
             className={`p-3 rounded-xl transition-all ${isListening ? "bg-red-50 text-red-500 animate-pulse" : "bg-gray-50 text-gray-500 hover:bg-gray-100"}`}
@@ -331,9 +381,29 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
             disabled={typing}
           />
           <button
-            onClick={() => setIsSpeakingEnabled(!isSpeakingEnabled)}
-            className="p-3 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 transition-all"
-            title={isSpeakingEnabled ? "Turn off voice responses" : "Turn on voice responses"}
+            type="button"
+            onClick={() => {
+              setIsSpeakingEnabled((prev) => {
+                const next = !prev;
+                if (!next && typeof window !== "undefined") {
+                  window.speechSynthesis.cancel();
+                }
+                return next;
+              });
+            }}
+            className={`p-3 rounded-xl transition-all ${
+              isSpeakingEnabled
+                ? "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                : "bg-[rgba(53,71,97,0.12)] text-[#354761]"
+            }`}
+            title={
+              isSpeakingEnabled
+                ? "Mute voice readout (stops current speech)"
+                : "Unmute voice readout"
+            }
+            aria-label={
+              isSpeakingEnabled ? "Mute voice readout" : "Unmute voice readout"
+            }
           >
             {isSpeakingEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
@@ -342,14 +412,17 @@ I'm here to help you identify scams, understand threats, and stay safe online. A
             style={{ borderRadius: 12 }}
             onClick={() => sendMessage()}
             disabled={typing || !input.trim()}
+            type="button"
+            aria-label="Send message"
+            title="Send message"
           >
             <Send size={18} />
           </button>
         </div>
         <div className="flex items-center justify-between mt-2 px-1">
-          <p className="text-[10px] text-[var(--text-muted)]">
-            Powered by Google ADK + Gemini 2.0 Flash
-          </p>
+            <p className="text-[10px] text-[var(--text-muted)]">
+              SoloFraud Autonomous Agentic AI Engine · v2.0 Stable
+            </p>
           <div className="flex gap-2">
             {[
               { icon: Phone, label: "Report", tip: "997 NSRC" },

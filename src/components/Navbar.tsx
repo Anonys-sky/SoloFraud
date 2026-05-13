@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, Search, Globe, MessageCircle, BarChart3, Menu, X } from "lucide-react";
+import { Shield, Search, MessageCircle, BarChart3, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { href: "/", label: "Analyzer", icon: Search },
-  { href: "/url-check", label: "URL Sentinel", icon: Globe },
   { href: "/advisor", label: "AI Advisor", icon: MessageCircle },
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
 ];
@@ -42,8 +41,8 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Desktop Nav */}
-        <div className="hidden md:flex" style={{ alignItems: "center", gap: 4 }}>
+        {/* Desktop Nav (Centralized) */}
+        <div className="hidden md:flex" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", alignItems: "center", gap: 4 }}>
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -60,11 +59,9 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* Powered By Badge */}
-        <div className="hidden md:flex" style={{ alignItems: "center", gap: 8, fontSize: 13, color: "#9aabb8" }}>
-          <span>Powered by</span>
-          <span style={{ fontWeight: 700, color: "#354761" }}>Google AI</span>
-        </div>
+        {/* Right Spacer (for balance) */}
+        <div className="hidden md:block" style={{ width: 140 }}></div>
+
 
         {/* Mobile Toggle */}
         <button

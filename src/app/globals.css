@@ -559,3 +559,121 @@ textarea.input-glass {
   overflow-x: auto;
   margin: 8px 0;
 }
+
+/* ═══════════════════════════════════════════
+   Offline Indicator
+   ═══════════════════════════════════════════ */
+
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: linear-gradient(90deg, #D53746, #c9716e);
+  color: white;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════
+   Voice Input Animation
+   ═══════════════════════════════════════════ */
+
+@keyframes voicePulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.voice-active {
+  position: relative;
+}
+
+.voice-active::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 16px;
+  border: 2px solid #D53746;
+  animation: voicePulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   Language Toggle Button
+   ═══════════════════════════════════════════ */
+
+.lang-toggle {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-glass);
+  background: rgba(53, 71, 97, 0.04);
+  color: #354761;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-toggle:hover {
+  background: rgba(53, 71, 97, 0.08);
+  border-color: rgba(53, 71, 97, 0.2);
+}
+
+/* ═══════════════════════════════════════════
+   Finance Monitor — Tab Transitions
+   ═══════════════════════════════════════════ */
+
+.finance-tab-active {
+  background: white;
+  box-shadow: 0 2px 8px rgba(53, 71, 97, 0.08);
+  color: #354761;
+}
+
+.transaction-row {
+  transition: background 0.2s ease;
+}
+
+.transaction-row:hover {
+  background: rgba(53, 71, 97, 0.03);
+}
+
+/* ═══════════════════════════════════════════
+   PWA Install Prompt
+   ═══════════════════════════════════════════ */
+
+.pwa-install-banner {
+  background: linear-gradient(135deg, rgba(53,71,97,0.04), rgba(130,188,213,0.06));
+  border: 1px solid rgba(130,188,213,0.15);
+  border-radius: 16px;
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   Scrollbar — hide for specific containers
+   ═══════════════════════════════════════════ */
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

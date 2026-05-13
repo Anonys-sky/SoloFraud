@@ -1,4 +1,5 @@
 import { ai } from "../../lib/genkit";
+import { VERTEX_GCP_PROJECT_ID } from "@/lib/ai-config";
 import { z } from "zod";
 
 /**
@@ -18,12 +19,12 @@ export const vertexAISearchRetriever = ai.defineRetriever(
       documents: [
         {
           content: [{ 
-            text: `[Grounded Intelligence Source: solofraud_666] Primary Fraud Intel Data Store for project solofraud-my-2030.` 
+            text: `[Grounded Intelligence Source: solofraud_data] Primary Fraud Intel Data Store for project ${VERTEX_GCP_PROJECT_ID}.` 
           }],
           metadata: { 
             source: "Vertex AI Search (Discovery Engine)",
-            projectId: "solofraud-my-2030",
-            dataStoreId: "solofraud_666",
+            projectId: VERTEX_GCP_PROJECT_ID,
+            dataStoreId: "solofraud_data",
             location: "global"
           }
         }

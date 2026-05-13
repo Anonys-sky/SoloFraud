@@ -1,5 +1,5 @@
 /**
- * SoloFraud Multi-Layer Security Perimeter
+ * ScamShield Multi-Layer Security Perimeter
  * Implements PII Redaction, Injection Defense, and Rate Limiting.
  */
 
@@ -62,7 +62,7 @@ export function isMaliciousPrompt(text: string): { isMalicious: boolean; reason?
     "forget everything",
     "bypass security",
     "output the system message",
-    "do not mention solo fraud",
+    "do not mention scam shield",
     "stop being the advisor"
   ];
 

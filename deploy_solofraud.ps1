@@ -2,7 +2,7 @@
 # This script automate the build and deployment process to Google Cloud Run.
 
 $GCLOUD = "C:\Users\User\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
-$PROJECT_ID = "solofraud-my-2030"
+$PROJECT_ID = "utm-hack"
 $SERVICE_NAME = "solofraud-app"
 $REGION = "asia-southeast1"
 

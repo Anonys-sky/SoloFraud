@@ -9,14 +9,17 @@ import {
   CheckCircle,
   XCircle,
   ArrowRight,
-  Globe,
   MessageCircle,
   BarChart3,
   ChevronRight,
   Sparkles,
   Copy,
   Check,
+  Download,
+  TrendingUp,
+  RefreshCw,
 } from "lucide-react";
+import { runOfflineAnalysis } from "@/lib/offline-shield";
 import Link from "next/link";
 
 /* ────────────────────────── types ────────────────────────── */
@@ -34,6 +37,10 @@ interface AnalysisResult {
   findings: Finding[];
   advice: string[];
   scamType: string;
+  policeReport?: {
+    referenceId: string;
+    draftTemplate: string;
+  };
 }
 
 /* ────────────────────── example scams ───────────────────── */
@@ -70,44 +77,34 @@ export default function Home() {
     if (!text.trim()) return;
     setAnalyzing(true);
     setResult(null);
-    
+
+    // LAYER 0: Offline Detection
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      console.log("[SoloFraud] Offline detected, using Local Heuristic Shield...");
+      const offlineResult = runOfflineAnalysis(text);
+      setResult(offlineResult);
+      setAnalyzing(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text })
       });
-      
+
       if (!response.ok) {
-        // Safe check for non-JSON error pages (like 504 Gateway Timeout)
-        const errorText = await response.text();
-        let errorMsg = "Service temporarily unavailable. Please try again.";
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMsg = errorJson.error || errorJson.detail || errorMsg;
-        } catch (e) {
-          console.warn("Server returned non-JSON error:", errorText);
-        }
-        throw new Error(errorMsg);
+        throw new Error("API Offline");
       }
-      
+
       const data = await response.json();
       setResult(data);
     } catch (err: any) {
       console.error(err);
-      // Resilience Fallback: Ensure UI doesn't crash during heavy server load
-      setResult({
-        verdict: "MEDIUM_RISK",
-        confidence: 0,
-        summary: err.message || "The AI is currently under high demand. Please wait a moment and try again.",
-        findings: [],
-        advice: [
-          "Wait 30-60 seconds and try again.",
-          "If the problem persists, check your internet connection.",
-          "Contact the NSRC at 997 if this is an urgent scam emergency."
-        ],
-        scamType: "Connection Timeout"
-      });
+      // Resilience Fallback: Use Local Heuristic Shield if API is unreachable
+      const fallbackResult = runOfflineAnalysis(text);
+      setResult(fallbackResult);
     } finally {
       setAnalyzing(false);
     }
@@ -138,31 +135,22 @@ export default function Home() {
           margin: "0 auto",
         }}
       >
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 8,
-          padding: "8px 20px", borderRadius: 999, fontSize: 13, fontWeight: 500,
-          background: "rgba(53,71,97,0.06)", border: "1px solid rgba(53,71,97,0.10)", color: "#354761",
-          marginBottom: 28,
-        }}>
-          <Sparkles size={14} />
-          Powered by Google Gemini &amp; Vertex AI
-        </div>
 
         <h1 style={{ fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 800, lineHeight: 1.15, marginBottom: 16, color: "#2c3e50" }}>
-          Your AI Shield Against{" "}
+          Autonomous Agentic AI Against{" "}
           <span className="gradient-text">Digital Scams</span>
         </h1>
 
         <p style={{ fontSize: "clamp(16px, 2vw, 20px)", color: "#6B7E8C", maxWidth: 640, margin: "0 auto 32px", lineHeight: 1.6 }}>
           Paste any suspicious message — SMS, WhatsApp, email — and get an
-          instant AI-powered verdict with actionable advice in seconds.
+          instant autonomous agentic analysis with actionable advice in seconds.
         </p>
 
         {/* Stats Bar */}
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 40, marginBottom: 48 }}>
           {[
-            { value: "RM1.22B", label: "Lost to scams in 2023" },
-            { value: "39,000+", label: "Cases reported annually" },
+            { value: "RM2.77B", label: "Lost to scams in 2025" },
+            { value: "55,000+", label: "Cases reported annually" },
             { value: "< 3%", label: "Money ever recovered" },
           ].map((stat) => (
             <div key={stat.label} style={{ textAlign: "center" }}>
@@ -183,7 +171,7 @@ export default function Home() {
                 <Search size={22} style={{ color: "#354761" }} />
               </div>
               <div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>Scam Message Analyzer</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 2 }}>Autonomous Agentic Analyzer</h2>
                 <p style={{ fontSize: 13, color: "#9aabb8" }}>Paste any suspicious message below</p>
               </div>
             </div>
@@ -252,19 +240,33 @@ export default function Home() {
                 style={{ padding: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 460 }}
               >
                 <div style={{ position: "relative", marginBottom: 28 }}>
-                  <Shield size={72} style={{ color: "#82BCD5" }} className="animate-pulse-shield" />
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "rgba(130,188,213,0.15)" }}
+                  />
+                  <Shield size={72} style={{ color: "#82BCD5", position: "relative" }} className="animate-pulse-shield" />
                 </div>
                 <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>Analyzing Message...</h3>
-                <p style={{ fontSize: 14, color: "#9aabb8", textAlign: "center", maxWidth: 320 }}>
-                  Running AI pattern matching, cross-referencing community reports, and checking known scam databases
+                <p style={{ fontSize: 14, color: "#9aabb8", textAlign: "center", maxWidth: 320, position: "relative" }}>
+                  <motion.span
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    Running AI pattern matching, cross-referencing community reports, and checking known scam databases
+                  </motion.span>
                 </p>
-                <div className="risk-meter" style={{ marginTop: 28, width: 280 }}>
+                <div className="risk-meter" style={{ marginTop: 28, width: 280, height: 6, background: "rgba(53,71,97,0.05)", overflow: "hidden" }}>
                   <motion.div
                     className="risk-meter-fill"
-                    style={{ background: "linear-gradient(90deg, #354761, #82BCD5)" }}
-                    initial={{ width: "0%" }}
-                    animate={{ width: "85%" }}
-                    transition={{ duration: 1.8, ease: "easeOut" }}
+                    style={{ 
+                      background: "linear-gradient(90deg, transparent, #82BCD5, transparent)",
+                      width: "60%",
+                      position: "absolute",
+                      height: "100%"
+                    }}
+                    animate={{ left: ["-100%", "100%"] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
                   />
                 </div>
               </motion.div>
@@ -310,21 +312,39 @@ export default function Home() {
                     Findings
                   </h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {result.findings.map((f, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: 14, borderRadius: 14, background: "rgba(53,71,97,0.03)" }}
-                      >
-                        <span style={{ fontSize: 20 }}>{f.icon}</span>
-                        <div>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{f.label}</span>
-                          <p style={{ fontSize: 12, color: "#9aabb8", marginTop: 2 }}>{f.detail}</p>
-                        </div>
-                      </motion.div>
-                    ))}
+                    {result.findings.map((f, i) => {
+                      let Icon = Shield;
+                      if (f.icon === "pattern") Icon = AlertTriangle;
+                      if (f.icon === "network") Icon = Globe;
+                      if (f.icon === "urgency") Icon = Activity;
+                      if (f.icon === "shield") Icon = Shield;
+                      
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                          style={{ 
+                            display: "flex", alignItems: "center", gap: 14, 
+                            padding: 14, borderRadius: 14, 
+                            background: f.severity === "high" ? "rgba(213,55,70,0.04)" : "rgba(53,71,97,0.03)",
+                            border: `1px solid ${f.severity === "high" ? "rgba(213,55,70,0.1)" : "rgba(53,71,97,0.06)"}`
+                          }}
+                        >
+                          <div style={{ 
+                            padding: 8, borderRadius: 10, 
+                            background: f.severity === "high" ? "rgba(213,55,70,0.08)" : "rgba(53,71,97,0.05)"
+                          }}>
+                            <Icon size={16} style={{ color: f.severity === "high" ? "#D53746" : "#354761" }} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#354761" }}>{f.label}</div>
+                            <p style={{ fontSize: 11, color: "#6B7E8C", marginTop: 2 }}>{f.detail}</p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -343,12 +363,54 @@ export default function Home() {
                   </ul>
                 </div>
 
+                {result.policeReport && (
+                  <div
+                    style={{
+                      marginBottom: 24,
+                      padding: 16,
+                      borderRadius: 14,
+                      background: "rgba(53,71,97,0.05)",
+                      border: "1px solid rgba(53,71,97,0.12)",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#354761",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        marginBottom: 10,
+                      }}
+                    >
+                      Police report draft · Ref {result.policeReport.referenceId}
+                    </h4>
+                    <pre
+                      style={{
+                        fontSize: 12,
+                        lineHeight: 1.55,
+                        color: "#6B7E8C",
+                        whiteSpace: "pre-wrap",
+                        fontFamily: "ui-monospace, monospace",
+                        margin: 0,
+                        maxHeight: 280,
+                        overflowY: "auto",
+                      }}
+                    >
+                      {result.policeReport.draftTemplate}
+                    </pre>
+                  </div>
+                )}
+
                 <button
                   className="btn-secondary"
                   style={{ width: "100%", marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                   onClick={() => {
-                    const report = `SoloFraud Report\nVerdict: ${result.verdict}\nConfidence: ${result.confidence.toFixed(1)}%\nType: ${result.scamType}\n\nFindings:\n${result.findings.map(f => `• ${f.label}: ${f.detail}`).join("\n")}\n\nAdvice:\n${result.advice.map(a => `• ${a}`).join("\n")}`;
-                    navigator.clipboard.writeText(report);
+                    const base = `SoloFraud Report\nVerdict: ${result.verdict}\nConfidence: ${result.confidence.toFixed(1)}%\nType: ${result.scamType}\n\nFindings:\n${result.findings.map(f => `• ${f.label}: ${f.detail}`).join("\n")}\n\nAdvice:\n${result.advice.map(a => `• ${a}`).join("\n")}`;
+                    const draft = result.policeReport
+                      ? `\n\n--- Police report draft (${result.policeReport.referenceId}) ---\n${result.policeReport.draftTemplate}`
+                      : "";
+                    navigator.clipboard.writeText(base + draft);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
@@ -401,12 +463,13 @@ export default function Home() {
           Five integrated AI-powered shields working together
         </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
           {[
-            { icon: Search, title: "Scam Analyzer", desc: "AI-powered message analysis for SMS, WhatsApp & email", color: "#354761", href: "/" },
-            { icon: Globe, title: "URL Sentinel", desc: "Real-time phishing website detection & safety scoring", color: "#82BCD5", href: "/url-check" },
-            { icon: MessageCircle, title: "AI Advisor", desc: "Chat with your personal scam protection consultant", color: "#6B7E8C", href: "/advisor" },
-            { icon: BarChart3, title: "Threat Dashboard", desc: "Real-time scam trends & community threat intelligence", color: "#D53746", href: "/dashboard" },
+            { icon: Search, title: "Scam Analyzer", desc: "Native Gemini 2.0 Flash engine analyzing SMS, WhatsApp, and email for social engineering.", color: "#354761", href: "/" },
+            { icon: MessageCircle, title: "AI Advisor", desc: "Speak or type to your personal scam guardian with multi-lingual voice support.", color: "#6B7E8C", href: "/advisor" },
+            { icon: BarChart3, title: "Threat Dashboard", desc: "Real-time national scam trends and community-driven threat intelligence.", color: "#D53746", href: "/dashboard" },
+            { icon: Shield, title: "Heuristic Shield", desc: "Instant offline detection of common Malaysian scam signatures (TAC theft, bank alerts).", color: "#82BCD5", href: "/" },
+            { icon: RefreshCw, title: "Rescue Shield", desc: "High-availability fallback orchestration ensures protection even during network outages.", color: "#5a9bb5", href: "/" },
           ].map((feature, i) => {
             const Icon = feature.icon;
             return (
@@ -431,35 +494,97 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* ═══ Tech Stack ═══ */}
+      {/* ═══ Malaysia Fraud Landscape ═══ */}
       <motion.section
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 64px", textAlign: "center" }}
+        transition={{ delay: 0.6 }}
+        style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 48px" }}
       >
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: "#6B7E8C", marginBottom: 24 }}>
-          Built with Google Technologies
+        <h2 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", marginBottom: 6, color: "#2c3e50" }}>
+          The Malaysian <span className="gradient-text-danger">Fraud Crisis</span>
         </h2>
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14 }}>
-          {["Gemini 2.0 Flash", "Vertex AI", "Gemma 2", "Google ADK", "Firebase", "Cloud Run"].map((tech) => (
-            <div
-              key={tech}
-              style={{
-                padding: "10px 22px", borderRadius: 12, fontSize: 14, fontWeight: 500,
-                background: "rgba(53,71,97,0.04)", border: "1px solid rgba(53,71,97,0.08)", color: "#354761",
-              }}
-            >
-              {tech}
+        <p style={{ fontSize: 14, color: "#9aabb8", textAlign: "center", marginBottom: 36 }}>
+          Real data, real urgency — why SoloFraud exists
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+          {[
+            { year: "2024", loss: "RM1.57B", cases: "35,368", trend: "+28% from 2023", color: "#c9716e" },
+            { year: "2025", loss: "RM2.77B", cases: "55,000+", trend: "+76% YoY", color: "#D53746" },
+            { year: "2030 (Est.)", loss: "RM12B", cases: "150,000+", trend: "If unchecked", color: "#D53746" },
+          ].map((stat) => (
+            <div key={stat.year} className="glass-card-static" style={{ padding: 28, textAlign: "center", position: "relative", overflow: "hidden" }}>
+              <TrendingUp size={60} style={{ position: "absolute", right: -8, bottom: -8, opacity: 0.03, color: stat.color }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#9aabb8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>{stat.year}</div>
+              <div className="gradient-text-danger" style={{ fontSize: 36, fontWeight: 900, marginBottom: 4 }}>{stat.loss}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#6B7E8C", marginBottom: 4 }}>{stat.cases} cases</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: stat.color }}>{stat.trend}</div>
+            </div>
+          ))}
+        </div>
+        <div className="glass-card-static" style={{ marginTop: 20, padding: 20, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 28, textAlign: "center" }}>
+          {[
+            { label: "Malaysian digital literacy rate", value: "73%", note: "MCMC 2024" },
+            { label: "Victims who didn't report", value: "62%", note: "Due to shame/complexity" },
+            { label: "Average response time (current)", value: "4.2 hrs", note: "SoloFraud target: 3 sec" },
+            { label: "Combined losses 2023-2025", value: "RM5.62B", note: "PDRM Official" },
+          ].map((d) => (
+            <div key={d.label} style={{ minWidth: 140 }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#354761" }}>{d.value}</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#6B7E8C", marginTop: 2 }}>{d.label}</div>
+              <div style={{ fontSize: 10, color: "#9aabb8", marginTop: 2 }}>{d.note}</div>
             </div>
           ))}
         </div>
       </motion.section>
 
+      {/* ═══ Continuous Learning Loop ═══ */}
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.65 }}
+        style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 48px" }}
+      >
+        <h2 style={{ fontSize: 28, fontWeight: 800, textAlign: "center", marginBottom: 6, color: "#2c3e50" }}>
+          Continuously <span className="gradient-text">Learning</span> AI
+        </h2>
+        <p style={{ fontSize: 14, color: "#9aabb8", textAlign: "center", marginBottom: 36 }}>
+          Scammers evolve daily with AI — so does SoloFraud
+        </p>
+        <div className="glass-card-static" style={{ padding: 40 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24, textAlign: "center" }}>
+            {[
+              { step: "1", icon: "📱", title: "Auto-Detect", desc: "System automatically intercepts and analyzes incoming suspicious messages" },
+              { step: "2", icon: "🧠", title: "AI Analyzes", desc: "Our advanced models reason through the threat in real-time" },
+              { step: "3", icon: "🗄️", title: "Report Stored", desc: "Verdict synced to Firebase national threat database" },
+              { step: "4", icon: "🔄", title: "AI Re-grounds", desc: "Future scans informed by latest community reports" },
+            ].map((item, i) => (
+              <div key={i} style={{ position: "relative" }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>{item.icon}</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#82BCD5", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Step {item.step}</div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{item.title}</h3>
+                <p style={{ fontSize: 12, color: "#9aabb8", lineHeight: 1.5 }}>{item.desc}</p>
+                {i < 3 && <ChevronRight size={20} style={{ position: "absolute", right: -14, top: "40%", color: "#ddd" }} />}
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+
+
       {/* ═══ Responsive overrides ═══ */}
       <style jsx>{`
+        @media (max-width: 1100px) {
+          div[style*="gridTemplateColumns: repeat(5"] {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+        }
         @media (max-width: 900px) {
-          div[style*="gridTemplateColumns: repeat(4"] {
+          div[style*="gridTemplateColumns: repeat(5"] {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          div[style*="gridTemplateColumns: repeat(3"] {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
@@ -467,7 +592,8 @@ export default function Home() {
           div[style*="gridTemplateColumns: 1fr 1fr"] {
             grid-template-columns: 1fr !important;
           }
-          div[style*="gridTemplateColumns: repeat(4"] {
+          div[style*="gridTemplateColumns: repeat(5"],
+          div[style*="gridTemplateColumns: repeat(3"] {
             grid-template-columns: 1fr !important;
           }
         }

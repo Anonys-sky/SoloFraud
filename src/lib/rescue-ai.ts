@@ -1,83 +1,83 @@
-import { GoogleGenAI } from "@google/genai";
+import { ai } from "./genkit";
+import { hasVertexAgentApiKey, modelPriorityForAnalysis } from "./ai-config";
+import { generateTextVertexWithApiKey } from "./vertex-genai";
 
 /**
- * SoloFraud Rescue AI SDK - Vertex API Key Edition
- * Ported directly from the Hackathon Python configuration.
+ * ScamShield Rescue AI — Vertex Agent API key (@google/genai) first, then Genkit fallbacks.
  */
 
-let aiInstance: any = null;
-
-function getAI() {
-  if (aiInstance) return aiInstance;
-  
-  const GEN_AI_KEY = process.env.GEMINI_API_KEY as string;
-  if (!GEN_AI_KEY) {
-    console.warn("[Rescue AI] Missing GEMINI_API_KEY. AI features will be disabled until configured.");
-  }
-
-  aiInstance = new GoogleGenAI({
-    vertexai: {
-      project: "solofraud-my-2030", 
-      location: "us-central1"
-    },
-    apiKey: GEN_AI_KEY 
-  });
-  return aiInstance;
-}
-
-export async function runRescueAI(prompt: string, modelName: string = "gemini-3.1-flash-lite-preview") {
+async function tryVertexAgentText(prompt: string): Promise<string | null> {
+  if (!hasVertexAgentApiKey()) return null;
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        systemInstruction: 
-          "You are the SoloFraud AI Advisor, an autonomous sovereign guardian protecting Malaysians. " +
-          "Your mission is the 'Speed Revolution': reducing victim response time from hours to 3 seconds. " +
-          "ACTION POLICY: If investigating a number or bank, you MUST autonomously use the Google Search tool to verify latest community scam reports. " +
-          "CRITICAL RULE: Every single time you invoke the tool, you MUST explicitly announce your autonomous action at the very beginning of your response using this exact format on its own line: `[AGENT ACTION: Explaining what tool you used and the parameters]`. This is required to visually prove your agentic capabilities.",
-        tools: [{ googleSearch: {} }],
-        temperature: 0.1,
-        topP: 0.95,
-        maxOutputTokens: 2000,
-      }
-    });
-    return response.text;
+    return await generateTextVertexWithApiKey(prompt);
   } catch (error) {
-    console.error(`[Rescue AI] Fatal Fallback Failure for ${modelName}:`, error);
-    throw error;
+    console.warn(
+      "[Rescue AI] Vertex Agent (API key) failed:",
+      error instanceof Error ? error.message : error
+    );
+    return null;
   }
 }
 
-/**
- * Specifically for the Scam Analyzer JSON output
- */
+async function generateTextWithModelFallback(prompt: string, models: string[]) {
+  let lastError: unknown;
+  for (const model of models) {
+    try {
+      return await ai.generate({
+        model,
+        prompt,
+        config: { temperature: 0.1 },
+      });
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `[Rescue AI] Model ${model} failed:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+  throw lastError;
+}
+
 export async function runRescueAnalysis(message: string) {
   const prompt = `
     Analyze this message for scam risks: "${message}"
     Return your response EXCLUSIVELY as a JSON object with this exact structure:
     {
       "verdict": "SAFE" | "LOW_RISK" | "MEDIUM_RISK" | "HIGH_RISK",
-      "confidence": number between 0 and 100,
-      "summary": "one sentence high level risk summary",
-      "findings": [
-        { "icon": "emoji", "label": "finding name", "detail": "finding detail", "severity": "low|medium|high" }
-      ],
-      "advice": ["array of advice strings"],
-      "scamType": "the identified scam type"
+      "confidence": number,
+      "summary": "string",
+      "findings": [{ "icon": "string", "label": "string", "detail": "string", "severity": "low|medium|high" }],
+      "advice": ["string"],
+      "scamType": "string"
     }
   `;
 
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-lite-preview",
-    contents: prompt,
-    config: {
-      temperature: 0.1,
-      responseMimeType: "application/json"
-    }
-  });
+  try {
+    const fromVertex = await tryVertexAgentText(prompt);
+    const text =
+      fromVertex ??
+      (await generateTextWithModelFallback(prompt, modelPriorityForAnalysis()))
+        .text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : text);
+  } catch (error) {
+    console.error("[Rescue AI] Analysis failure (all models):", error);
+    throw error;
+  }
+}
 
-  return JSON.parse(response.text);
+export async function runRescueAI(prompt: string, modelName?: string) {
+  const models = modelName
+    ? [modelName, ...modelPriorityForAnalysis().filter((m) => m !== modelName)]
+    : modelPriorityForAnalysis();
+  try {
+    const fromVertex = await tryVertexAgentText(prompt);
+    if (fromVertex) return fromVertex;
+    const response = await generateTextWithModelFallback(prompt, models);
+    return response.text;
+  } catch (error) {
+    console.error("[Rescue AI] Chat failure (all models):", error);
+    throw error;
+  }
 }

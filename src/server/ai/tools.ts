@@ -1,5 +1,6 @@
 import { ai } from "../../lib/genkit";
 import { z } from "zod";
+import { generatePoliceReportDraft } from "./police-draft";
 
 /**
  * Tool: querySemakmuleDB
@@ -66,29 +67,10 @@ export const draftPoliceReport = ai.defineTool(
   },
   async ({ incidentDetails, scammerContact, financialLoss }) => {
     console.log(`[Genkit Tool] Executing draftPoliceReport for ${scammerContact}`);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    const timestamp = new Date().toISOString().split('T')[0];
-    const reportRef = `NSRC-${Math.floor(Math.random() * 90000) + 10000}`;
-    
-    const draft = `
-**[OFFICIAL INITIAL REPORT DRAFT - NSRC]**
-Reference No: ${reportRef}
-Date: ${timestamp}
-
-**1. Incident Summary:**
-${incidentDetails}
-
-**2. Scammer Information:**
-Contact/Handle: ${scammerContact}
-
-**3. Financial Impact:**
-Reported Loss: ${financialLoss ? `RM ${financialLoss}` : "None / Unspecified"}
-
-**Action Required:**
-Please bring this draft to the nearest police station or submit via the NSRC portal (997) for immediate execution.
-`.trim();
-
-    return { draftTemplate: draft, referenceId: reportRef };
+    return generatePoliceReportDraft({
+      incidentDetails,
+      scammerContact,
+      financialLoss,
+    });
   }
 );

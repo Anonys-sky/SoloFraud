@@ -3,8 +3,11 @@ export const dynamic = "force-dynamic";
 // We moved our AI agent logic to the server folder to keep front and back ends clearly separated!
 import { runAgenticChat } from "@/server/ai/agent";
 import { checkRateLimit } from "@/lib/security";
+// import { chatCache, generateCacheKey } from "@/lib/cache";
 
 export async function POST(req: Request) {
+  const startTime = Date.now();
+  
   try {
     // LAYER 3: Gatekeeper Rate Limiting
     const ip = req.headers.get("x-forwarded-for") || "unknown";
@@ -40,11 +43,33 @@ export async function POST(req: Request) {
       parts: [{ text: m.content }],
     }));
 
-    // Here's the magic! We pass the sanitized history into our autonomous Agent.
-    const agentResponseText = await runAgenticChat(formattedHistory);
+    // LAYER 4: Cache check — DISABLED
+    /*
+    const lastMessage = formattedHistory[formattedHistory.length - 1]?.parts[0]?.text || "";
+    const cacheKey = generateCacheKey(lastMessage + "_ctx_" + formattedHistory.length);
+    const cachedResponse = chatCache.get(cacheKey);
+    
+    if (cachedResponse) {
+      console.log(`[Chat Cache] HIT — returning cached response`);
+      const response = NextResponse.json({ text: cachedResponse });
+      response.headers.set("X-Cache", "HIT");
+      response.headers.set("X-Response-Time", `${Date.now() - startTime}ms`);
+      return response;
+    }
+    */
 
-    // Send the AI's final answer back to the frontend to be displayed.
-    return NextResponse.json({ text: agentResponseText });
+    // Here's the magic! We pass the sanitized history into our autonomous Agent.
+    const agentResult = await runAgenticChat(formattedHistory);
+
+    const response = NextResponse.json({
+      text: agentResult.text,
+      ...(agentResult.policeReport
+        ? { policeReport: agentResult.policeReport }
+        : {}),
+    });
+    response.headers.set("X-Cache", "MISS");
+    response.headers.set("X-Response-Time", `${Date.now() - startTime}ms`);
+    return response;
     
   } catch (error: any) {
     console.error("[Chat API Error]:", error);
@@ -56,3 +81,4 @@ export async function POST(req: Request) {
     }, { status: 500 });
   }
 }
+

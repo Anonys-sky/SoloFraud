@@ -1,0 +1,56 @@
+{
+  "name": "SoloFraud MY — AI Scam Protection",
+  "short_name": "SoloFraud",
+  "description": "Real-time AI protection against digital fraud, phishing, and financial scams for Malaysians. Powered by Google Gemini.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F1F6F9",
+  "theme_color": "#354761",
+  "lang": "en-MY",
+  "dir": "ltr",
+  "categories": ["security", "finance", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scam Analyzer",
+      "short_name": "Analyzer",
+      "url": "/",
+      "description": "Analyze suspicious messages for scam patterns",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "URL Sentinel",
+      "short_name": "URL Check",
+      "url": "/url-check",
+      "description": "Check suspicious URLs for phishing"
+    },
+    {
+      "name": "AI Advisor",
+      "short_name": "Advisor",
+      "url": "/advisor",
+      "description": "Chat with your AI scam protection advisor"
+    },
+    {
+      "name": "Finance Monitor",
+      "short_name": "Finance",
+      "url": "/finance",
+      "description": "Monitor transactions and spending patterns"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
