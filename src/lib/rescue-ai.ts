@@ -45,7 +45,7 @@ export async function runRescueAnalysis(message: string) {
     Return your response EXCLUSIVELY as a JSON object with this exact structure:
     {
       "verdict": "SAFE" | "LOW_RISK" | "MEDIUM_RISK" | "HIGH_RISK",
-      "confidence": number,
+      "confidence": number (as a percentage 0-100),
       "summary": "string",
       "findings": [{ "icon": "string", "label": "string", "detail": "string", "severity": "low|medium|high" }],
       "advice": ["string"],

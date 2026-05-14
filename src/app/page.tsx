@@ -259,7 +259,7 @@ export default function Home() {
                 <div className="risk-meter" style={{ marginTop: 28, width: 280, height: 6, background: "rgba(53,71,97,0.05)", overflow: "hidden" }}>
                   <motion.div
                     className="risk-meter-fill"
-                    style={{ 
+                    style={{
                       background: "linear-gradient(90deg, transparent, #82BCD5, transparent)",
                       width: "60%",
                       position: "absolute",
@@ -297,7 +297,7 @@ export default function Home() {
                         color: verdictConfig[result.verdict].color,
                         border: `1px solid ${verdictConfig[result.verdict].color}33`,
                       }}>
-                        {result.confidence.toFixed(1)}% confidence
+                        {(result.confidence <= 1.0 ? result.confidence * 100 : result.confidence).toFixed(1)}% confidence
                       </span>
                     </div>
                     <p style={{ fontSize: 14, color: "#6B7E8C", marginTop: 4 }}>{result.scamType}</p>
@@ -318,22 +318,22 @@ export default function Home() {
                       if (f.icon === "network") Icon = Globe;
                       if (f.icon === "urgency") Icon = Activity;
                       if (f.icon === "shield") Icon = Shield;
-                      
+
                       return (
                         <motion.div
                           key={i}
                           initial={{ opacity: 0, x: 10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: i * 0.1 }}
-                          style={{ 
-                            display: "flex", alignItems: "center", gap: 14, 
-                            padding: 14, borderRadius: 14, 
+                          style={{
+                            display: "flex", alignItems: "center", gap: 14,
+                            padding: 14, borderRadius: 14,
                             background: f.severity === "high" ? "rgba(213,55,70,0.04)" : "rgba(53,71,97,0.03)",
                             border: `1px solid ${f.severity === "high" ? "rgba(213,55,70,0.1)" : "rgba(53,71,97,0.06)"}`
                           }}
                         >
-                          <div style={{ 
-                            padding: 8, borderRadius: 10, 
+                          <div style={{
+                            padding: 8, borderRadius: 10,
                             background: f.severity === "high" ? "rgba(213,55,70,0.08)" : "rgba(53,71,97,0.05)"
                           }}>
                             <Icon size={16} style={{ color: f.severity === "high" ? "#D53746" : "#354761" }} />
@@ -406,7 +406,8 @@ export default function Home() {
                   className="btn-secondary"
                   style={{ width: "100%", marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                   onClick={() => {
-                    const base = `SoloFraud Report\nVerdict: ${result.verdict}\nConfidence: ${result.confidence.toFixed(1)}%\nType: ${result.scamType}\n\nFindings:\n${result.findings.map(f => `• ${f.label}: ${f.detail}`).join("\n")}\n\nAdvice:\n${result.advice.map(a => `• ${a}`).join("\n")}`;
+                    const conf = (result.confidence <= 1.0 ? result.confidence * 100 : result.confidence).toFixed(1);
+                    const base = `SoloFraud Report\nVerdict: ${result.verdict}\nConfidence: ${conf}%\nType: ${result.scamType}\n\nFindings:\n${result.findings.map(f => `• ${f.label}: ${f.detail}`).join("\n")}\n\nAdvice:\n${result.advice.map(a => `• ${a}`).join("\n")}`;
                     const draft = result.policeReport
                       ? `\n\n--- Police report draft (${result.policeReport.referenceId}) ---\n${result.policeReport.draftTemplate}`
                       : "";
