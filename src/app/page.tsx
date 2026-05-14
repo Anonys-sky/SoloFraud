@@ -564,7 +564,7 @@ export default function Home() {
                 <div style={{ fontSize: 11, fontWeight: 800, color: "#82BCD5", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Step {item.step}</div>
                 <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{item.title}</h3>
                 <p style={{ fontSize: 12, color: "#9aabb8", lineHeight: 1.5 }}>{item.desc}</p>
-                {i < 3 && <ChevronRight size={20} style={{ position: "absolute", right: -14, top: "40%", color: "#ddd" }} />}
+                {i < 3 && <ChevronRight size={20} className="step-arrow" style={{ position: "absolute", right: -14, top: "40%", color: "#ddd" }} />}
               </div>
             ))}
           </div>
@@ -581,7 +581,8 @@ export default function Home() {
           }
         }
         @media (max-width: 900px) {
-          div[style*="gridTemplateColumns: repeat(5"] {
+          div[style*="gridTemplateColumns: repeat(5"],
+          div[style*="gridTemplateColumns: repeat(4"] {
             grid-template-columns: repeat(2, 1fr) !important;
           }
           div[style*="gridTemplateColumns: repeat(3"] {
@@ -593,8 +594,12 @@ export default function Home() {
             grid-template-columns: 1fr !important;
           }
           div[style*="gridTemplateColumns: repeat(5"],
+          div[style*="gridTemplateColumns: repeat(4"],
           div[style*="gridTemplateColumns: repeat(3"] {
             grid-template-columns: 1fr !important;
+          }
+          .step-arrow {
+            display: none !important;
           }
         }
       `}</style>
