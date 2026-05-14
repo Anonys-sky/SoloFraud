@@ -162,7 +162,7 @@ export default function Home() {
       </motion.section>
 
       {/* ═══ Analyzer Section ═══ */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 48px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div className="analyzer-grid" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 48px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         {/* Input Panel */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
           <div className="glass-card-static" style={{ padding: 28, height: "100%" }}>
@@ -507,7 +507,7 @@ export default function Home() {
         <p style={{ fontSize: 14, color: "#9aabb8", textAlign: "center", marginBottom: 36 }}>
           Real data, real urgency — why SoloFraud exists
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+        <div className="security-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
           {[
             { year: "2024", loss: "RM1.57B", cases: "35,368", trend: "+28% from 2023", color: "#c9716e" },
             { year: "2025", loss: "RM2.77B", cases: "55,000+", trend: "+76% YoY", color: "#D53746" },
@@ -552,7 +552,7 @@ export default function Home() {
           Scammers evolve daily with AI — so does SoloFraud
         </p>
         <div className="glass-card-static" style={{ padding: 40 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24, textAlign: "center" }}>
+          <div className="learning-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24, textAlign: "center" }}>
             {[
               { step: "1", icon: "📱", title: "Auto-Detect", desc: "System automatically intercepts and analyzes incoming suspicious messages" },
               { step: "2", icon: "🧠", title: "AI Analyzes", desc: "Our advanced models reason through the threat in real-time" },
@@ -575,27 +575,20 @@ export default function Home() {
 
       {/* ═══ Responsive overrides ═══ */}
       <style jsx>{`
-        @media (max-width: 1100px) {
-          div[style*="gridTemplateColumns: repeat(5"] {
-            grid-template-columns: repeat(3, 1fr) !important;
-          }
-        }
         @media (max-width: 900px) {
-          div[style*="gridTemplateColumns: repeat(5"],
-          div[style*="gridTemplateColumns: repeat(4"] {
+          .learning-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
-          div[style*="gridTemplateColumns: repeat(3"] {
+          .security-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
         @media (max-width: 768px) {
-          div[style*="gridTemplateColumns: 1fr 1fr"] {
+          .analyzer-grid {
             grid-template-columns: 1fr !important;
           }
-          div[style*="gridTemplateColumns: repeat(5"],
-          div[style*="gridTemplateColumns: repeat(4"],
-          div[style*="gridTemplateColumns: repeat(3"] {
+          .learning-grid,
+          .security-grid {
             grid-template-columns: 1fr !important;
           }
           .step-arrow {
