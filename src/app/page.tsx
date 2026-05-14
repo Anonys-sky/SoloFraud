@@ -115,11 +115,14 @@ export default function Home() {
     setResult(null);
   };
 
-  const verdictConfig = {
+  const verdictConfig: Record<string, any> = {
     HIGH_RISK: { color: "#D53746", bg: "rgba(213,55,70,0.06)", icon: XCircle, label: "HIGH RISK", cardClass: "danger" },
     MEDIUM_RISK: { color: "#c9716e", bg: "rgba(201,113,110,0.06)", icon: AlertTriangle, label: "MEDIUM RISK", cardClass: "warning" },
     LOW_RISK: { color: "#5a9bb5", bg: "rgba(90,155,181,0.06)", icon: CheckCircle, label: "LOW RISK", cardClass: "safe" },
+    SAFE: { color: "#5a9bb5", bg: "rgba(90,155,181,0.06)", icon: CheckCircle, label: "SAFE", cardClass: "safe" },
   };
+
+  const getVerdictConfig = (v: string) => verdictConfig[v] || verdictConfig["LOW_RISK"];
 
   return (
     <div style={{ width: "100%", minHeight: "100vh" }}>
@@ -278,7 +281,7 @@ export default function Home() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
-                className={`glass-card-static result-card ${verdictConfig[result.verdict].cardClass}`}
+                className={`glass-card-static result-card ${getVerdictConfig(result.verdict).cardClass}`}
                 style={{ padding: 28, minHeight: 460 }}
               >
                 {/* Verdict Header */}
@@ -289,13 +292,13 @@ export default function Home() {
                   })()}
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontSize: 24, fontWeight: 800, color: verdictConfig[result.verdict].color }}>
-                        {verdictConfig[result.verdict].label}
+                      <span style={{ fontSize: 24, fontWeight: 800, color: getVerdictConfig(result.verdict).color }}>
+                        {getVerdictConfig(result.verdict).label}
                       </span>
                       <span className="badge" style={{
-                        background: verdictConfig[result.verdict].bg,
-                        color: verdictConfig[result.verdict].color,
-                        border: `1px solid ${verdictConfig[result.verdict].color}33`,
+                        background: getVerdictConfig(result.verdict).bg,
+                        color: getVerdictConfig(result.verdict).color,
+                        border: `1px solid ${getVerdictConfig(result.verdict).color}33`,
                       }}>
                         {(result.confidence <= 1.0 ? result.confidence * 100 : result.confidence).toFixed(1)}% confidence
                       </span>
