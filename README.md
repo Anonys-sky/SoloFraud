@@ -20,7 +20,7 @@ SoloFraud is a production-hardened, **Autonomous Execution Agentic AI** cybersec
 By integrating advanced autonomous reasoning directly into the national security conversation, SoloFraud shrinks the response time from "victim in panic" to "actionable reporting" from hours to **3 seconds**.
 
 ## 🎯 The "Panic Gap" Problem
-In 2025, Malaysians lost **RM1.3 Billion** to scams. Current solutions like Whoscall are *reactive* (relying on databases of old numbers). SoloFraud is **Proactive**—it uses Gemini's reasoning to autonomously detect "Zero-Day" frauds the moment they hit your phone.
+In 2023, Malaysians lost **RM1.3 Billion** to scams. Current solutions like Whoscall are *reactive* (relying on databases of old numbers). SoloFraud is **Proactive**—it uses Gemini's reasoning to autonomously detect "Zero-Day" frauds the moment they hit your phone.
 
 ## 🧠 Core Architecture: The Sovereign Guardian
 
