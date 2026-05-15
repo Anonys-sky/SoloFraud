@@ -5,6 +5,7 @@ import { querySemakmuleDB, draftPoliceReport } from "./tools";
 import { runRescueAI, runRescueAnalysis } from "@/lib/rescue-ai";
 import { z } from "zod";
 import { scrubPII, isMaliciousPrompt } from "@/lib/security";
+import { isScamRelatedAdvisorQuery } from "@/lib/advisor-scope";
 import { generatePoliceReportDraft } from "./police-draft";
 
 export type PoliceReportArtifact = {
@@ -98,6 +99,25 @@ function appendPoliceReportToText(text: string, pr: PoliceReportArtifact): strin
   return `${t}\n\n---\n**Police report draft** · Ref \`${pr.referenceId}\`\n\n\`\`\`\n${pr.draftTemplate}\n\`\`\`\n`;
 }
 
+const ADVISOR_SCAM_SYSTEM =
+  "You are the SoloFraud AI Advisor, a continuously-learning autonomous guardian protecting all Malaysians regardless of technical literacy. " +
+  "Your mission is the 'Speed Revolution': reducing victim response time from hours to 3 seconds. " +
+  "SCOPE: Only discuss scams, fraud, phishing, suspicious messages/calls, and how to stay safe or report incidents in Malaysia. " +
+  "ACTION POLICY: Only when the user describes a scam incident or high-risk impersonation (Bank Negara, banks, PDRM, parcel/customs, investment pressure, TAC/OTP theft), " +
+  "you MUST PROACTIVELY invoke 'draftPoliceReport' in that same response. " +
+  "Do not draft police reports for general questions, safety tips, or off-topic chat. " +
+  "ALWAYS check provided phone numbers or bank accounts using 'querySemakmuleDB'. " +
+  "Communicate in a professional, protective, and Malaysian-context-aware manner. " +
+  "CRITICAL RULE: Every single time you invoke a tool, you MUST explicitly announce your autonomous action at the very beginning of your response using this exact format on its own line: `[AGENT ACTION: Explaining what tool you used and the parameters]`. " +
+  "The user will see the full NSRC-style draft appended below your reply automatically when a report is drafted.";
+
+const ADVISOR_OFF_TOPIC_SYSTEM =
+  "You are the SoloFraud AI Advisor for Malaysia — scams, fraud, and online safety only. " +
+  "If the user asks about unrelated topics (relationships, dating, homework, general life advice, entertainment, etc.), " +
+  "politely decline in 2–4 sentences and invite them to ask about suspicious messages, calls, links, or reporting scams. " +
+  "Do NOT use any tools. Do NOT mention police report drafts, NSRC references, or drafting reports. " +
+  "Do NOT treat casual chat as a scam incident.";
+
 type AnalyzerPayload = {
   verdict: string;
   confidence: number;
@@ -168,6 +188,7 @@ export async function runAgenticChat(
 
   // LAYER 2: PII Redaction (Privacy Mask)
   const sanitizedPrompt = scrubPII(lastUserMessage);
+  const scamRelated = isScamRelatedAdvisorQuery(sanitizedPrompt);
 
   const models = modelPriorityForChat();
 
@@ -183,27 +204,20 @@ export async function runAgenticChat(
         model: model,
         messages: priorMessages,
         prompt: sanitizedPrompt,
-        system: 
-          "You are the SoloFraud AI Advisor, a continuously-learning autonomous guardian protecting all Malaysians regardless of technical literacy. " +
-          "Your mission is the 'Speed Revolution': reducing victim response time from hours to 3 seconds. " +
-          "ACTION POLICY: If you identify a high-risk scam crisis (e.g., impersonation of Bank Negara, PDRM, or account compromise), " +
-          "you MUST PROACTIVELY invoke 'draftPoliceReport' immediately in your first response to provide the user with a head-start. " +
-          "Do not just ask for information; take the first protective step for them. " +
-          "ALWAYS check provided phone numbers or bank accounts using 'querySemakmuleDB'. " +
-          "Communicate in a professional, protective, and Malaysian-context-aware manner. " +
-          "CRITICAL RULE: Every single time you invoke a tool (like querying the database or drafting a report), you MUST explicitly announce your autonomous action at the very beginning of your response using this exact format on its own line: `[AGENT ACTION: Explaining what tool you used and the parameters]`. This is required to visually prove your agentic capabilities. " +
-          "Always call draftPoliceReport for serious impersonation (Bank Negara, banks, PDRM, parcel/customs, investment pressure). The user will see the full NSRC-style draft appended below your reply automatically.",
-        tools: [querySemakmuleDB, draftPoliceReport],
-        config: { 
+        system: scamRelated ? ADVISOR_SCAM_SYSTEM : ADVISOR_OFF_TOPIC_SYSTEM,
+        tools: scamRelated ? [querySemakmuleDB, draftPoliceReport] : undefined,
+        config: {
           temperature: 0.1,
           maxOutputTokens: 2048,
         },
       });
 
-      let policeReport =
-        extractPoliceReportFromGenerateResponse(response) ?? undefined;
+      let policeReport: PoliceReportArtifact | undefined = scamRelated
+        ? extractPoliceReportFromGenerateResponse(response) ?? undefined
+        : undefined;
 
       const needsSynthesizedDraft =
+        scamRelated &&
         !policeReport &&
         /\b(bank negara|bnm|pdrm|account compromised|police report|laporan polis|nsrc|draft report)\b/i.test(
           `${sanitizedPrompt} ${response.text}`
@@ -216,13 +230,14 @@ export async function runAgenticChat(
         });
       }
 
-      const textWithDraft = policeReport
-        ? appendPoliceReportToText(response.text, policeReport)
-        : response.text;
+      const textWithDraft =
+        scamRelated && policeReport
+          ? appendPoliceReportToText(response.text, policeReport)
+          : response.text;
 
       return {
         text: textWithDraft,
-        policeReport,
+        ...(scamRelated && policeReport ? { policeReport } : {}),
       };
     } catch (error: any) {
       console.warn(`[Chat Agent] Model ${model} failed or rate-limited:`, error.message);
@@ -235,15 +250,10 @@ export async function runAgenticChat(
       const text = await runRescueAI(
         chatHistory[chatHistory.length - 1].parts[0].text
       );
-      const kw =
-        /\b(bank|negara|bnm|pdrm|parcel|scam|compromised|caller|tac|otp)\b/i.test(
-          scrubPII(chatHistory[chatHistory.length - 1].parts[0].text)
-        );
-      if (kw) {
+      const rescuePrompt = scrubPII(chatHistory[chatHistory.length - 1].parts[0].text);
+      if (isScamRelatedAdvisorQuery(rescuePrompt)) {
         const policeReport = await generatePoliceReportDraft({
-          incidentDetails: scrubPII(
-            chatHistory[chatHistory.length - 1].parts[0].text
-          ).slice(0, 4000),
+          incidentDetails: rescuePrompt.slice(0, 4000),
           scammerContact: "Unknown",
         });
         return {

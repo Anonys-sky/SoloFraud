@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
@@ -12,12 +13,19 @@ import {
   MessageCircle,
   BarChart3,
   ChevronRight,
-  Sparkles,
   Copy,
   Check,
-  Download,
   TrendingUp,
   RefreshCw,
+  Globe,
+  Activity,
+  Zap,
+  Brain,
+  Database,
+  Link2,
+  Loader2,
+  CheckCircle2,
+  ScanSearch,
 } from "lucide-react";
 import { runOfflineAnalysis } from "@/lib/offline-shield";
 import Link from "next/link";
@@ -63,27 +71,77 @@ const exampleScams = [
   },
 ];
 
-/* ────────────────── analysis function ──────────────── */
-
+const ANALYSIS_STEPS = [
+  { label: "Ingesting message", sublabel: "Parsing SMS / WhatsApp / email payload", icon: MessageCircle },
+  { label: "Language & intent scan", sublabel: "Detecting BM / EN mix and urgency cues", icon: ScanSearch },
+  { label: "Malaysian scam signatures", sublabel: "TAC theft · Macau · parcel · bank impersonation", icon: Shield },
+  { label: "Community threat database", sublabel: "Cross-referencing Firebase NSRC reports", icon: Database },
+  { label: "URL & link analysis", sublabel: "Flagging suspicious domains and short links", icon: Link2 },
+  { label: "Agentic AI reasoning", sublabel: "Gemini 2.0 Flash — social engineering patterns", icon: Brain },
+  { label: "Computing verdict", sublabel: "Risk score · confidence · scam classification", icon: Zap },
+];
 
 /* ────────────────────── page ──────────────────── */
+type RescuePhase = "idle" | "warning" | "activating";
+
 export default function Home() {
+  const router = useRouter();
   const [text, setText] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [rescuePhase, setRescuePhase] = useState<RescuePhase>("idle");
+  const [analysisStep, setAnalysisStep] = useState(0);
+
+  useEffect(() => {
+    if (!analyzing) {
+      setAnalysisStep(0);
+      return;
+    }
+    setAnalysisStep(0);
+    const interval = setInterval(() => {
+      setAnalysisStep((i) => (i < ANALYSIS_STEPS.length - 1 ? i + 1 : i));
+    }, 520);
+    return () => clearInterval(interval);
+  }, [analyzing]);
+
+  const triggerAutonomousRescue = (data: AnalysisResult, message: string) => {
+    const ref =
+      data.policeReport?.referenceId ??
+      `NSRC-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 90000) + 10000).padStart(5, "0")}`;
+
+    setRescuePhase("warning");
+    setTimeout(() => {
+      setRescuePhase("activating");
+      setTimeout(() => {
+        const params = new URLSearchParams({
+          msg: message,
+          type: data.scamType || "Scam attempt",
+          ref,
+        });
+        router.push(`/rescue?${params.toString()}`);
+      }, 1400);
+    }, 1600);
+  };
 
   const handleAnalyze = async () => {
     if (!text.trim()) return;
     setAnalyzing(true);
     setResult(null);
+    setRescuePhase("idle");
+
+    const finishWithResult = (data: AnalysisResult) => {
+      setResult(data);
+      setAnalyzing(false);
+      if (data.verdict === "HIGH_RISK") {
+        triggerAutonomousRescue(data, text);
+      }
+    };
 
     // LAYER 0: Offline Detection
-    if (typeof window !== 'undefined' && !navigator.onLine) {
+    if (typeof window !== "undefined" && !navigator.onLine) {
       console.log("[SoloFraud] Offline detected, using Local Heuristic Shield...");
-      const offlineResult = runOfflineAnalysis(text);
-      setResult(offlineResult);
-      setAnalyzing(false);
+      finishWithResult(runOfflineAnalysis(text));
       return;
     }
 
@@ -91,7 +149,7 @@ export default function Home() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({ message: text }),
       });
 
       if (!response.ok) {
@@ -99,14 +157,10 @@ export default function Home() {
       }
 
       const data = await response.json();
-      setResult(data);
-    } catch (err: any) {
+      finishWithResult(data);
+    } catch (err: unknown) {
       console.error(err);
-      // Resilience Fallback: Use Local Heuristic Shield if API is unreachable
-      const fallbackResult = runOfflineAnalysis(text);
-      setResult(fallbackResult);
-    } finally {
-      setAnalyzing(false);
+      finishWithResult(runOfflineAnalysis(text));
     }
   };
 
@@ -125,7 +179,84 @@ export default function Home() {
   const getVerdictConfig = (v: string) => verdictConfig[v] || verdictConfig["LOW_RISK"];
 
   return (
-    <div style={{ width: "100%", minHeight: "100vh" }}>
+    <motion.div style={{ width: "100%", minHeight: "100vh" }}>
+      <AnimatePresence>
+        {rescuePhase !== "idle" && (
+          <motion.div
+            key="rescue-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 100,
+              background: "rgba(44, 62, 80, 0.55)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 24,
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="glass-card-static"
+              style={{
+                maxWidth: 420,
+                width: "100%",
+                padding: 36,
+                textAlign: "center",
+                border:
+                  rescuePhase === "warning"
+                    ? "2px solid rgba(213,55,70,0.35)"
+                    : "2px solid rgba(130,188,213,0.35)",
+              }}
+            >
+              {rescuePhase === "warning" ? (
+                <>
+                  <motion.div
+                    animate={{ scale: [1, 1.08, 1] }}
+                    transition={{ duration: 0.6, repeat: Infinity }}
+                    style={{ marginBottom: 20 }}
+                  >
+                    <XCircle size={56} style={{ color: "#D53746" }} />
+                  </motion.div>
+                  <h2 style={{ fontSize: 22, fontWeight: 800, color: "#D53746", marginBottom: 10 }}>
+                    HIGH RISK DETECTED
+                  </h2>
+                  <p style={{ fontSize: 14, color: "#6B7E8C", lineHeight: 1.6 }}>
+                    Autonomous rescue agent will draft a police report and initiate bank account freeze procedures.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                    style={{ marginBottom: 20, display: "inline-block" }}
+                  >
+                    <Zap size={52} style={{ color: "#82BCD5" }} />
+                  </motion.div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "#354761", marginBottom: 10 }}>
+                    Activating Autonomous Agent…
+                  </h2>
+                  <p style={{ fontSize: 13, color: "#9aabb8" }}>
+                    Redirecting to rescue orchestration
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 20 }}>
+                    <div className="typing-dot" />
+                    <div className="typing-dot" />
+                    <div className="typing-dot" />
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ═══ Hero Section ═══ */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
@@ -240,37 +371,116 @@ export default function Home() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="glass-card-static"
-                style={{ padding: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", minHeight: 460 }}
+                style={{ padding: 28, height: "100%", minHeight: 460, display: "flex", flexDirection: "column" }}
               >
-                <div style={{ position: "relative", marginBottom: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid rgba(53,71,97,0.08)" }}>
                   <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    style={{ position: "absolute", inset: -20, borderRadius: "50%", background: "rgba(130,188,213,0.15)" }}
-                  />
-                  <Shield size={72} style={{ color: "#82BCD5", position: "relative" }} className="animate-pulse-shield" />
-                </div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>Analyzing Message...</h3>
-                <p style={{ fontSize: 14, color: "#9aabb8", textAlign: "center", maxWidth: 320, position: "relative" }}>
-                  <motion.span
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                    style={{ padding: 10, borderRadius: 14, background: "rgba(130,188,213,0.12)" }}
                   >
-                    Running AI pattern matching, cross-referencing community reports, and checking known scam databases
-                  </motion.span>
-                </p>
-                <div className="risk-meter" style={{ marginTop: 28, width: 280, height: 6, background: "rgba(53,71,97,0.05)", overflow: "hidden" }}>
-                  <motion.div
-                    className="risk-meter-fill"
-                    style={{
-                      background: "linear-gradient(90deg, transparent, #82BCD5, transparent)",
-                      width: "60%",
-                      position: "absolute",
-                      height: "100%"
-                    }}
-                    animate={{ left: ["-100%", "100%"] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                  />
+                    <Brain size={24} style={{ color: "#354761" }} />
+                  </motion.div>
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, color: "#354761", marginBottom: 2 }}>
+                      Agent reasoning in progress
+                    </h3>
+                    <p style={{ fontSize: 12, color: "#9aabb8" }}>
+                      Step {Math.min(analysisStep + 1, ANALYSIS_STEPS.length)} of {ANALYSIS_STEPS.length}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+                  {ANALYSIS_STEPS.map((step, i) => {
+                    const status = i < analysisStep ? "done" : i === analysisStep ? "active" : "pending";
+                    const Icon = step.icon;
+                    return (
+                      <motion.div
+                        key={step.label}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 12,
+                          padding: "12px 14px",
+                          borderRadius: 12,
+                          background:
+                            status === "active"
+                              ? "rgba(130,188,213,0.10)"
+                              : status === "done"
+                                ? "rgba(90,155,181,0.06)"
+                                : "rgba(53,71,97,0.02)",
+                          border: `1px solid ${
+                            status === "active"
+                              ? "rgba(130,188,213,0.25)"
+                              : status === "done"
+                                ? "rgba(90,155,181,0.12)"
+                                : "rgba(53,71,97,0.05)"
+                          }`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 10,
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background:
+                              status === "done"
+                                ? "rgba(90,155,181,0.15)"
+                                : status === "active"
+                                  ? "rgba(130,188,213,0.18)"
+                                  : "rgba(53,71,97,0.06)",
+                          }}
+                        >
+                          {status === "active" ? (
+                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                              <Loader2 size={18} style={{ color: "#354761" }} />
+                            </motion.div>
+                          ) : status === "done" ? (
+                            <CheckCircle2 size={18} style={{ color: "#5a9bb5" }} />
+                          ) : (
+                            <Icon size={18} style={{ color: "#9aabb8", opacity: 0.5 }} />
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: status === "pending" ? "#9aabb8" : "#354761",
+                            }}
+                          >
+                            {step.label}
+                            {status === "active" && (
+                              <motion.span
+                                animate={{ opacity: [0, 1, 0] }}
+                                transition={{ duration: 0.8, repeat: Infinity }}
+                              >
+                                …
+                              </motion.span>
+                            )}
+                          </div>
+                          <p style={{ fontSize: 11, color: "#9aabb8", marginTop: 2, lineHeight: 1.4 }}>{step.sublabel}</p>
+                          {status === "active" && (
+                            <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: "rgba(53,71,97,0.08)", overflow: "hidden" }}>
+                              <motion.div
+                                style={{ height: "100%", background: "linear-gradient(90deg, #82BCD5, #354761)", borderRadius: 2 }}
+                                animate={{ width: ["0%", "100%"] }}
+                                transition={{ duration: 0.52, ease: "easeInOut" }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -600,6 +810,6 @@ export default function Home() {
           }
         }
       `}</style>
-    </div>
+    </motion.div>
   );
 }
