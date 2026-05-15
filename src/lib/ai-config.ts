@@ -59,11 +59,11 @@ export function hasVertexAgentApiKey(): boolean {
  */
 export function modelPriorityForAnalysis(): string[] {
   const vertex = [
-    "vertexai/gemini-2.5-flash",
     "vertexai/gemini-2.5-flash-lite",
-    "vertexai/gemini-2.5-pro",
-    "vertexai/gemini-2.0-flash-001",
     "vertexai/gemini-2.0-flash-lite",
+    "vertexai/gemini-2.5-flash",
+    "vertexai/gemini-2.0-flash-001",
+    "vertexai/gemini-2.5-pro",
     "vertexai/gemini-1.5-flash",
   ];
   const skipStudio = process.env.SKIP_GEMINI_STUDIO === "true";

@@ -28,6 +28,10 @@ import {
   ScanSearch,
 } from "lucide-react";
 import { runOfflineAnalysis } from "@/lib/offline-shield";
+import {
+  isAnalyzerMessageInScope,
+  buildOutOfScopeAnalyzerResult,
+} from "@/lib/analyzer-scope";
 import Link from "next/link";
 
 /* ────────────────────────── types ────────────────────────── */
@@ -71,6 +75,9 @@ const exampleScams = [
   },
 ];
 
+/** Minimum time the step-by-step analyzer UI stays visible (demo polish). */
+const MIN_ANALYZE_DISPLAY_MS = 3000;
+
 const ANALYSIS_STEPS = [
   { label: "Ingesting message", sublabel: "Parsing SMS / WhatsApp / email payload", icon: MessageCircle },
   { label: "Language & intent scan", sublabel: "Detecting BM / EN mix and urgency cues", icon: ScanSearch },
@@ -101,7 +108,7 @@ export default function Home() {
     setAnalysisStep(0);
     const interval = setInterval(() => {
       setAnalysisStep((i) => (i < ANALYSIS_STEPS.length - 1 ? i + 1 : i));
-    }, 520);
+    }, Math.ceil(MIN_ANALYZE_DISPLAY_MS / ANALYSIS_STEPS.length));
     return () => clearInterval(interval);
   }, [analyzing]);
 
@@ -129,8 +136,13 @@ export default function Home() {
     setAnalyzing(true);
     setResult(null);
     setRescuePhase("idle");
+    const analyzeStartedAt = Date.now();
 
-    const finishWithResult = (data: AnalysisResult) => {
+    const finishWithResult = async (data: AnalysisResult) => {
+      const remaining = MIN_ANALYZE_DISPLAY_MS - (Date.now() - analyzeStartedAt);
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
       setResult(data);
       setAnalyzing(false);
       if (data.verdict === "HIGH_RISK") {
@@ -138,10 +150,15 @@ export default function Home() {
       }
     };
 
+    if (!isAnalyzerMessageInScope(text)) {
+      await finishWithResult(buildOutOfScopeAnalyzerResult());
+      return;
+    }
+
     // LAYER 0: Offline Detection
     if (typeof window !== "undefined" && !navigator.onLine) {
       console.log("[SoloFraud] Offline detected, using Local Heuristic Shield...");
-      finishWithResult(runOfflineAnalysis(text));
+      await finishWithResult(runOfflineAnalysis(text));
       return;
     }
 
@@ -157,10 +174,10 @@ export default function Home() {
       }
 
       const data = await response.json();
-      finishWithResult(data);
+      await finishWithResult(data);
     } catch (err: unknown) {
       console.error(err);
-      finishWithResult(runOfflineAnalysis(text));
+      await finishWithResult(runOfflineAnalysis(text));
     }
   };
 

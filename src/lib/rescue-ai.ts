@@ -6,10 +6,13 @@ import { generateTextVertexWithApiKey } from "./vertex-genai";
  * ScamShield Rescue AI — Vertex Agent API key (@google/genai) first, then Genkit fallbacks.
  */
 
-async function tryVertexAgentText(prompt: string): Promise<string | null> {
+async function tryVertexAgentText(
+  prompt: string,
+  fast?: boolean
+): Promise<string | null> {
   if (!hasVertexAgentApiKey()) return null;
   try {
-    return await generateTextVertexWithApiKey(prompt);
+    return await generateTextVertexWithApiKey(prompt, { fast });
   } catch (error) {
     console.warn(
       "[Rescue AI] Vertex Agent (API key) failed:",
@@ -39,28 +42,31 @@ async function generateTextWithModelFallback(prompt: string, models: string[]) {
   throw lastError;
 }
 
+function normalizeAnalysisVerdict(raw: Record<string, unknown>) {
+  if (raw.verdict === "SAFE") raw.verdict = "LOW_RISK";
+  return raw;
+}
+
 export async function runRescueAnalysis(message: string) {
-  const prompt = `
-    Analyze this message for scam risks: "${message}"
-    Return your response EXCLUSIVELY as a JSON object with this exact structure:
-    {
-      "verdict": "SAFE" | "LOW_RISK" | "MEDIUM_RISK" | "HIGH_RISK",
-      "confidence": number (as a percentage 0-100),
-      "summary": "string",
-      "findings": [{ "icon": "string", "label": "string", "detail": "string", "severity": "low|medium|high" }],
-      "advice": ["string"],
-      "scamType": "string"
-    }
-  `;
+  const escaped = message.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const prompt = `Malaysian scam analyzer. Message to scan:
+"${escaped}"
+
+Return ONLY valid JSON (no markdown):
+{"verdict":"HIGH_RISK|MEDIUM_RISK|LOW_RISK","confidence":0-100,"summary":"string","findings":[{"icon":"pattern|network|urgency|shield","label":"string","detail":"string","severity":"high|medium|low"}],"advice":["string"],"scamType":"string"}
+
+If the text is general chat or not a message to analyze, use LOW_RISK and say out of scope in summary.`;
 
   try {
-    const fromVertex = await tryVertexAgentText(prompt);
+    const fromVertex = await tryVertexAgentText(prompt, true);
     const text =
       fromVertex ??
       (await generateTextWithModelFallback(prompt, modelPriorityForAnalysis()))
         .text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    return JSON.parse(jsonMatch ? jsonMatch[0] : text);
+    return normalizeAnalysisVerdict(
+      JSON.parse(jsonMatch ? jsonMatch[0] : text) as Record<string, unknown>
+    );
   } catch (error) {
     console.error("[Rescue AI] Analysis failure (all models):", error);
     throw error;

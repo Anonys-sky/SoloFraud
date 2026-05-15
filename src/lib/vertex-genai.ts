@@ -9,7 +9,17 @@ import { getVertexAgentApiKey } from "./ai-config";
  *
  * Model IDs: use Vertex stable refs (e.g. gemini-2.0-flash → gemini-2.0-flash-001).
  */
-const VERTEX_GENAI_MODEL_CANDIDATES = [
+const VERTEX_GENAI_MODEL_FAST = [
+  process.env.VERTEX_GEMINI_MODEL?.trim(),
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash-lite-001",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash-001",
+  "gemini-1.5-flash-002",
+  "gemini-1.5-flash",
+].filter((m): m is string => !!m && m.length > 0);
+
+const VERTEX_GENAI_MODEL_DEFAULT = [
   process.env.VERTEX_GEMINI_MODEL?.trim(),
   "gemini-2.5-pro",
   "gemini-2.5-flash",
@@ -21,8 +31,12 @@ const VERTEX_GENAI_MODEL_CANDIDATES = [
 ].filter((m): m is string => !!m && m.length > 0);
 
 export async function generateTextVertexWithApiKey(
-  prompt: string
+  prompt: string,
+  options?: { fast?: boolean }
 ): Promise<string> {
+  const VERTEX_GENAI_MODEL_CANDIDATES = options?.fast
+    ? VERTEX_GENAI_MODEL_FAST
+    : VERTEX_GENAI_MODEL_DEFAULT;
   const apiKey = getVertexAgentApiKey();
   if (!apiKey) {
     throw new Error(

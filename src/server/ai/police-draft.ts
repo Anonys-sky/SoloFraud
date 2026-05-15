@@ -6,13 +6,18 @@ export type PoliceReportDraft = {
   referenceId: string;
 };
 
-export async function generatePoliceReportDraft(input: {
-  incidentDetails: string;
-  scammerContact?: string;
-  financialLoss?: string;
-}): Promise<PoliceReportDraft> {
+export async function generatePoliceReportDraft(
+  input: {
+    incidentDetails: string;
+    scammerContact?: string;
+    financialLoss?: string;
+  },
+  options?: { fast?: boolean }
+): Promise<PoliceReportDraft> {
   const { incidentDetails, scammerContact, financialLoss } = input;
-  await new Promise((r) => setTimeout(r, 350));
+  if (!options?.fast) {
+    await new Promise((r) => setTimeout(r, 350));
+  }
 
   const timestamp = new Date().toISOString().split("T")[0];
   const reportRef = `NSRC-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 90000) + 10000).padStart(5, "0")}`;

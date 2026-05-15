@@ -6,6 +6,11 @@ import { runRescueAI, runRescueAnalysis } from "@/lib/rescue-ai";
 import { z } from "zod";
 import { scrubPII, isMaliciousPrompt } from "@/lib/security";
 import { isScamRelatedAdvisorQuery } from "@/lib/advisor-scope";
+import {
+  isAnalyzerMessageInScope,
+  buildOutOfScopeAnalyzerResult,
+} from "@/lib/analyzer-scope";
+import { runOfflineAnalysis } from "@/lib/offline-shield";
 import { generatePoliceReportDraft } from "./police-draft";
 
 export type PoliceReportArtifact = {
@@ -135,7 +140,8 @@ type AnalyzerPayload = {
 
 async function attachPoliceDraftForScan(
   analysis: AnalyzerPayload,
-  sanitizedMessage: string
+  sanitizedMessage: string,
+  options?: { fast?: boolean }
 ): Promise<AnalyzerPayload> {
   const v = analysis.verdict;
   if (v !== "HIGH_RISK" && v !== "MEDIUM_RISK") return analysis;
@@ -143,11 +149,32 @@ async function attachPoliceDraftForScan(
     /\b(bank|negara|bnm|pdrm|polis|parcel|customs|kastam|tac|otp|whatsapp|hadiah|winner|invest|crypto|cimb|maybank|shopee|lhdn|call|phone|scam)\b/i;
   if (v === "MEDIUM_RISK" && !kw.test(sanitizedMessage)) return analysis;
 
-  const policeReport = await generatePoliceReportDraft({
-    incidentDetails: `SoloFraud MY analyzer — ${analysis.scamType} (${analysis.verdict}, ${Number(analysis.confidence).toFixed(1)}% confidence).\n\nMessage analyzed:\n${sanitizedMessage}`,
-    scammerContact: "Unknown — add caller number / bank account if available",
-  });
+  const policeReport = await generatePoliceReportDraft(
+    {
+      incidentDetails: `SoloFraud MY analyzer — ${analysis.scamType} (${analysis.verdict}, ${Number(analysis.confidence).toFixed(1)}% confidence).\n\nMessage analyzed:\n${sanitizedMessage}`,
+      scammerContact: "Unknown — add caller number / bank account if available",
+    },
+    { fast: options?.fast }
+  );
   return { ...analysis, policeReport };
+}
+
+function offlineToAnalyzerPayload(
+  offline: ReturnType<typeof runOfflineAnalysis>
+): AnalyzerPayload {
+  return {
+    verdict: offline.verdict,
+    confidence: offline.confidence,
+    summary: offline.summary.replace(/^OFFLINE PROTECTION: /, ""),
+    findings: offline.findings.map((f) => ({
+      icon: typeof f.icon === "string" && /^[a-z]+$/.test(f.icon) ? f.icon : "pattern",
+      label: f.label,
+      detail: f.detail,
+      severity: (f.severity as "high" | "medium" | "low") || "medium",
+    })),
+    advice: offline.advice,
+    scamType: offline.scamType.replace(/ \(Offline\)$/, ""),
+  };
 }
 
 /**
@@ -325,21 +352,31 @@ function runBasicHeuristicAnalysis(message: string) {
  * Upgraded to natively use the Google GenAI SDK (Vertex Express), bypassing Genkit telemetry latency.
  */
 export async function analyzeMessageFlow(input: { message: string }) {
+  const securityCheck = isMaliciousPrompt(input.message);
+  if (securityCheck.isMalicious) {
+    throw new Error(`Security Violation: ${securityCheck.reason}`);
+  }
+
+  const sanitizedMessage = scrubPII(input.message);
+
+  if (!isAnalyzerMessageInScope(sanitizedMessage)) {
+    console.log("[Flow] Out-of-scope analyzer input — instant refuse");
+    return buildOutOfScopeAnalyzerResult();
+  }
+
+  const heuristic = offlineToAnalyzerPayload(runOfflineAnalysis(sanitizedMessage));
+  if (heuristic.verdict === "HIGH_RISK" && heuristic.confidence >= 85) {
+    console.log("[Flow] Heuristic HIGH_RISK fast path");
+    return attachPoliceDraftForScan(heuristic, sanitizedMessage, { fast: true });
+  }
+
   try {
-    // LAYER 1 & 2: Security Sanitization
-    const securityCheck = isMaliciousPrompt(input.message);
-    if (securityCheck.isMalicious) throw new Error(`Security Violation: ${securityCheck.reason}`);
-
-    const sanitizedMessage = scrubPII(input.message);
-
-    console.log(`[Flow] Triggering Native Analysis for: ${sanitizedMessage.substring(0,20)}...`);
-    const analysis = (await runRescueAnalysis(
-      sanitizedMessage
-    )) as AnalyzerPayload;
-    return await attachPoliceDraftForScan(analysis, sanitizedMessage);
+    console.log(`[Flow] AI analysis for: ${sanitizedMessage.substring(0, 20)}...`);
+    const analysis = (await runRescueAnalysis(sanitizedMessage)) as AnalyzerPayload;
+    return attachPoliceDraftForScan(analysis, sanitizedMessage, { fast: true });
   } catch (error) {
     console.error(`[Flow] Native Analysis failed, deploying Heuristic Shield:`, error);
     const h = runBasicHeuristicAnalysis(input.message) as AnalyzerPayload;
-    return await attachPoliceDraftForScan(h, scrubPII(input.message));
+    return attachPoliceDraftForScan(h, sanitizedMessage, { fast: true });
   }
 }
